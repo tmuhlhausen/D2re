@@ -1,0 +1,148 @@
+# Contributing to D2RE
+
+Thank you for your interest in contributing. This project depends entirely on
+community knowledge accumulated over decades of D2 reverse engineering. Every
+correction, addition, and improvement makes this a better resource for everyone.
+
+---
+
+## Before You Start
+
+- Read [README.md](README.md) to understand the scope and goals of the project.
+- Check [existing issues](https://github.com/yourname/d2re/issues) to see if
+  your contribution is already being worked on.
+- For large changes (new scripts, major restructuring), open an issue to discuss
+  before writing code — this avoids duplicated effort.
+
+---
+
+## Types of Contributions
+
+### Fixing Wrong or Missing Offsets
+
+Function offsets are the most time-sensitive part of this project. If you find
+an offset that is incorrect for a specific D2 version:
+
+1. Open an issue titled: `[OFFSET] FunctionName wrong for v1.XX`
+2. Include: the version, the wrong offset, the correct offset, and how you
+   verified it (e.g., "verified with IDA against D2Common.dll v1.13c SHA256 abc123").
+3. PRs fixing offsets should touch only `references/function-offsets.md`.
+
+### Documenting Unknown Packet Fields
+
+Many fields in `references/packets.md` are labeled `unk` (unknown). If you've
+reverse engineered the purpose of one:
+
+1. Open a PR updating the field name in `packets.md` and in the corresponding
+   `PacketDef` entry in `scripts/packet_sniffer.py`.
+2. Include a brief explanation of how you determined the field's purpose.
+
+### Adding New Packet Definitions
+
+If you've identified a packet type not currently in the tables:
+
+1. Add a `PacketDef` entry to the appropriate table in `packet_sniffer.py`.
+2. Include a full field breakdown with types and descriptions.
+3. Add a corresponding entry to `references/packets.md` with a C struct.
+4. Add a plain-English `explain` string explaining when and why the packet fires.
+
+### Improving Python Tools
+
+- Follow PEP 8 style.
+- Keep each script self-contained and runnable from the command line.
+- All new CLI flags must be documented in the script's docstring and in README.md.
+- Do not add hard dependencies without strong justification — prefer stdlib.
+
+### D2R Struct Offsets
+
+D2R is actively patched and struct offsets change with each patch. If you have
+verified current offsets for a specific D2R patch version:
+
+1. Open a PR to `references/d2r-resurrected.md`.
+2. Include the patch version (e.g., "v2.6.83681") and the source of the offsets.
+3. Mark old offsets as superseded rather than deleting them — historical data
+   is valuable.
+
+---
+
+## Style Guide
+
+### Markdown Documentation
+
+- Use ATX-style headers (`##`, not underlines).
+- Code blocks must include the language tag: ` ```c `, ` ```python `.
+- All hex values in code: lowercase with `0x` prefix: `0x63990`, not `63990h`.
+- All struct fields must include: offset comment, type, and a brief description.
+- Verified information is stated as fact. Unverified information is prefixed
+  with `/* ESTIMATED */` or `/* VERIFY */`.
+
+### C Code in Documentation
+
+- Always include the module, offset, and version in a comment above functions:
+  ```c
+  /* D2Common.dll+0x63990 (v1.13c) */
+  DWORD __fastcall D2Common_GetUnitStat(...);
+  ```
+- Use `BYTE`/`WORD`/`DWORD`/`QWORD` (not `uint8_t` etc.) — matches D2's own
+  internal style and makes cross-referencing with the original binary easier.
+- Use `#pragma pack(push, 1)` for all binary-mapped structs.
+- Use `__fastcall` or `__stdcall` — never omit calling convention on D2 functions.
+
+### Python Code
+
+- Type hints on all function signatures.
+- Docstrings on all public functions.
+- No magic numbers — use named constants.
+- CLI tools must have `--help` that explains every flag.
+- Graceful degradation if optional dependencies are missing.
+
+---
+
+## Testing Your Changes
+
+Before opening a PR, please verify:
+
+1. **Offsets:** Test any modified offsets by attaching a debugger (x64dbg) to
+   the corresponding D2 version and verifying the function at the stated address.
+
+2. **Python tools:** Test against at least one real D2 file:
+   ```bash
+   python scripts/d2s_parser.py test_data/test_char.d2s
+   python scripts/item_roller.py --base swrd --ilvl 80 --runs 1000
+   python scripts/packet_sniffer.py --demo --verbose
+   ```
+
+3. **No breakage:** All existing `--demo` mode outputs should still work after
+   your changes.
+
+---
+
+## Opening a Pull Request
+
+1. Fork the repository and create a branch: `git checkout -b fix/offset-d2common-v114d`
+2. Make your changes with clear, focused commits.
+3. Push and open a PR with a descriptive title and explanation.
+4. Reference any related issues: `Fixes #42` or `Related to #17`.
+
+PRs are reviewed within a few days. Constructive feedback is given — if
+something needs adjustment, it will be explained clearly.
+
+---
+
+## Code of Conduct
+
+This is a technical project with a singular focus: accurate documentation of
+D2's internals for legitimate research and modding purposes. Contributions
+must be:
+
+- **Accurate** — do not add information you have not verified.
+- **Respectful** — be courteous in issue discussions and PR reviews.
+- **On-topic** — this is not the place for general D2 gameplay discussion.
+
+Contributions that are clearly intended to facilitate cheating on official
+Battle.net servers will be rejected.
+
+---
+
+*Every veteran D2 modder was once a newcomer reading PhrozenKeep threads at 2am.
+Document what you know so the next person doesn't have to start from scratch.*
