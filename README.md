@@ -243,7 +243,7 @@ python scripts/mpq_extract.py --all-mpqs "C:/Diablo II/" --out ./tables/
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourname/d2re.git
+git clone https://github.com/tmuhlhausen/d2re.git
 cd d2re
 
 # Install all dependencies
