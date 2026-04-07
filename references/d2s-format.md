@@ -1,176 +1,285 @@
-# D2 Stat IDs Reference
-
-Stat IDs are defined in `D2Common.dll` and correspond to rows in `itemstatcost.txt`.
-The `WORD wStatId` field in `StatEx` uses these values.
-
-## Encoding Notes
-
-- **Fixed-point stats:** Many stats use 8-bit or 4-bit fractional encoding. The `*Divide*`
-  and `*Multiply*` columns in `itemstatcost.txt` define the conversion. E.g., HP stored as
-  `value * 256`, display as `value / 256`.
-- **Signed vs unsigned:** Resistance stats are signed `int` (can be negative). Damage stats
-  are unsigned `DWORD`.
-- **Per-level stats:** Stats with "perlevel" in their name encode a value per character level.
+# D2 Save File Format — Complete Bit-Stream Reference
+# .d2s v96 (v1.10–1.14d) — Verified against community analysis and source RE
 
 ---
 
-## Core Vital Stats (0x00–0x0F)
+## Header (0x00–0x14B, fixed-size)
 
-| ID | Hex | Name | Notes |
-|---|---|---|---|
-| 0 | 0x00 | Strength | Base stat |
-| 1 | 0x01 | Energy | |
-| 2 | 0x02 | Dexterity | |
-| 3 | 0x03 | Vitality | |
-| 4 | 0x04 | Statpts | Unspent stat points |
-| 5 | 0x05 | Newskills | Unspent skill points |
-| 6 | 0x06 | Hitpoints | Current HP — divide by 256 for display |
-| 7 | 0x07 | Maxhp | Max HP — divide by 256 |
-| 8 | 0x08 | Mana | Current mana — divide by 256 |
-| 9 | 0x09 | Maxmana | Max mana — divide by 256 |
-| 10 | 0x0A | Stamina | Current stamina — divide by 256 |
-| 11 | 0x0B | Maxstamina | Max stamina — divide by 256 |
-| 12 | 0x0C | Level | Character level |
-| 13 | 0x0D | Experience | Total XP |
-| 14 | 0x0E | Gold | Carried gold |
-| 15 | 0x0F | Goldbank | Stash gold |
-
----
-
-## Offense Stats (0x10–0x2F)
-
-| ID | Hex | Name | Notes |
-|---|---|---|---|
-| 16 | 0x10 | Item_Armor | Defense rating |
-| 17 | 0x11 | Item_MaxDamage | Max physical damage |
-| 18 | 0x12 | Item_MinDamage | Min physical damage |
-| 19 | 0x13 | Item_Attackrating | Attack rating |
-| 20 | 0x14 | Item_BlockChance | Block % |
-| 21 | 0x15 | Item_Tohit | Bonus to attack rating |
-| 22 | 0x16 | Item_Velocitypercent | Run/walk speed % |
-| 23 | 0x17 | Item_Attackspeed | IAS (increased attack speed) |
-| 24 | 0x18 | Item_Passiveattackspeed | Passive IAS |
-| 31 | 0x1F | Item_Tohit_Percent | % bonus attack rating |
-| 32 | 0x20 | Item_Damagemodifier | % enhanced damage |
-
----
-
-## Defense / Resistance Stats (0x27–0x3B)
-
-| ID | Hex | Name | Notes |
-|---|---|---|---|
-| 36 | 0x24 | Item_Resistfire | Fire resist (signed) |
-| 37 | 0x25 | Item_Resistcold | Cold resist (signed) |
-| 38 | 0x26 | Item_Resistlightning | Lightning resist (signed) |
-| 39 | 0x27 | Item_Resistpoison | Poison resist (signed) |
-| 40 | 0x28 | Item_Absorbfire | Fire absorb |
-| 41 | 0x29 | Item_Absorbcold | Cold absorb |
-| 42 | 0x2A | Item_Absorblightning | Lightning absorb |
-| 43 | 0x2B | Item_Absorbpoison | Poison absorb (rare) |
-| 44 | 0x2C | Item_Absorbfire_Percent | % fire absorb |
-| 45 | 0x2D | Item_Absorbcold_Percent | % cold absorb |
-| 46 | 0x2E | Item_Absorblightning_Percent | % lightning absorb |
-| 48 | 0x30 | Item_Maxresfire | +max fire resist |
-| 49 | 0x31 | Item_Maxrescold | +max cold resist |
-| 50 | 0x32 | Item_Maxreslightning | +max lightning resist |
-| 51 | 0x33 | Item_Maxrespoison | +max poison resist |
+```
+Off   Size  Field                    Notes
+────────────────────────────────────────────────────────────────────────────
+0x00  4     Magic                    0xAA55AA55 — validation
+0x04  4     Version                  96 (0x60) for v1.10+; 71 for v1.09
+0x08  4     File size                Total byte length of file
+0x0C  4     Checksum                 Sum of all bytes, with this field = 0
+0x10  4     Active weapon slot       0 = primary, 1 = switch
+0x14  16    Name                     ASCII, null-padded, max 15 chars + null
+0x24  1     Status flags
+                bit 0: ladder
+                bit 1: expansion (Lord of Destruction)
+                bit 2: unused
+                bit 3: hardcore
+                bit 4: died (hardcore death flag; char survives if bit4 set w/o bit3)
+                bit 5: expansion (duplicate of bit 1)
+                bit 6: unused
+                bit 7: unused
+0x25  1     Progression              Quest stage in furthest unlocked act
+0x26  2     Unknown                  Usually 0x0000
+0x28  1     Character class
+                0 = Amazon
+                1 = Necromancer
+                2 = Barbarian
+                3 = Sorceress
+                4 = Paladin
+                5 = Druid (expansion only)
+                6 = Assassin (expansion only)
+0x29  2     Unknown                  0x1010
+0x2B  1     Level                    Current character level (1–99)
+0x2C  4     Created                  Unix timestamp of creation
+0x30  4     Last played              Unix timestamp of last session
+0x34  4     Unknown                  0xFFFFFFFF
+0x38  64    Skill hotkeys            16 × DWORD skill IDs (0xFFFF = unassigned)
+0x78  4     Left mouse skill         Skill ID
+0x7C  4     Right mouse skill        Skill ID
+0x80  4     Left skill (switch)      Skill ID for weapon swap slot
+0x84  4     Right skill (switch)     Skill ID for weapon swap slot
+0x88  32    Appearance data          Menu char appearance selections
+0xA8  3     Difficulty               One byte per difficulty:
+                                       Normal, Nightmare, Hell
+                                       Bit 7 = active (currently on this diff)
+                                       Bits 0–2 = act reached (0–4)
+0xAB  4     Map seed                 Deterministic map generation seed
+0xAF  2     Mercenary dead           0 = alive, 1 = dead (costs gold to revive)
+0xB1  4     Mercenary GUID           Unit ID of merc (0 = no merc)
+0xB5  2     Mercenary name index     Index into hireling names table
+0xB7  2     Mercenary type           Encodes act + combat style + difficulty
+0xB9  4     Mercenary experience     Total XP (not level — level derived from XP)
+0xBD  144   Padding / unknown        All zeros in standard saves
+```
 
 ---
 
-## Elemental Damage Stats (0x34–0x6F)
+## Quest Data Section (variable, after 0x14C)
 
-| ID | Hex | Name | Notes |
-|---|---|---|---|
-| 52 | 0x34 | Item_Firedamage_Min | Min fire damage |
-| 53 | 0x35 | Item_Firedamage_Max | Max fire damage |
-| 54 | 0x36 | Item_Lightdamage_Min | Min lightning |
-| 55 | 0x37 | Item_Lightdamage_Max | Max lightning |
-| 56 | 0x38 | Item_Magicaldamage_Min | Min magic |
-| 57 | 0x39 | Item_Magicaldamage_Max | Max magic |
-| 58 | 0x3A | Item_Colddamage_Min | Min cold |
-| 59 | 0x3B | Item_Colddamage_Max | Max cold |
-| 60 | 0x3C | Item_Colddamage_Length | Cold duration (frames) |
-| 61 | 0x3D | Item_Poisondamage_Min | Poison dmg/sec × 256 |
-| 62 | 0x3E | Item_Poisondamage_Max | |
-| 63 | 0x3F | Item_Poisondamage_Length | Duration in frames |
+Magic header: `57 6F 6F 21` ("Woo!")
 
----
+```
+Off   Size  Field
+────────────────────────────────────────────
+0x00  2     Magic: 0x6677 ("Woo!" start)  — actually 0x576F6F21 as DWORD
+0x04  2     Version: 6
+0x06  2     Length: 298 bytes
 
-## Life/Mana/Stamina Modifiers (0x70–0x8F)
+Quest flags for each act × difficulty:
+  3 difficulties × (Act1=6 quests + Act2=6 + Act3=6 + Act4=3 + Act5=6) = 3×27 = 81 quest entries
+  Each quest = 2 bytes bitmask:
+    bit 0:  quest log acknowledged
+    bit 1:  quest complete step 1
+    bit 2:  quest complete step 2
+    ...
+    bit 12: quest complete (fully done)
+    bit 13: quest rewarded (reward taken)
+```
 
-| ID | Hex | Name | Notes |
-|---|---|---|---|
-| 74 | 0x4A | Item_Maxhp_Percent | +% max life |
-| 75 | 0x4B | Item_Maxmana_Percent | +% max mana |
-| 76 | 0x4C | Item_Maxstamina_Percent | +% max stamina |
-| 77 | 0x4D | Item_Tohit_Perlevel | Attack rating per level |
-| 78 | 0x4E | Item_Tohitpercent_Perlevel | |
-| 79 | 0x4F | Item_Cold_Perlevel | Cold dmg per level |
-| 80 | 0x50 | Item_Fire_Perlevel | Fire dmg per level |
-| 81 | 0x51 | Item_Ltng_Perlevel | Lightning per level |
-| 82 | 0x52 | Item_Pois_Perlevel | Poison per level |
-| 83 | 0x53 | Item_Resall_Perlevel | All resist per level |
-| 84 | 0x54 | Item_Absorb_Perlevel | Absorb per level |
+### Quest IDs (Act 1)
+| ID | Name | Reward |
+|---|---|---|
+| 0 | Den of Evil | Skill point, +1 to all resistances |
+| 1 | Sisters' Burial Grounds | NPC revival (Blood Raven) |
+| 2 | Tools of the Trade | Horadric Malus (socketed item) |
+| 3 | The Search for Cain | Deckard Cain joins |
+| 4 | The Forgotten Tower | Countess drops runes |
+| 5 | Sisters to the Slaughter | Andariel → Act 2 |
 
 ---
 
-## Life/Mana Leech & Regen (0x60–0x6F)
+## Waypoint Section (variable)
 
-| ID | Hex | Name | Notes |
-|---|---|---|---|
-| 96 | 0x60 | Item_Dmg_Percent | +% enhanced damage |
-| 97 | 0x61 | Item_Manasteal | Mana stolen per hit (÷2 = %) |
-| 98 | 0x62 | Item_Lifesteal | Life stolen per hit |
-| 99 | 0x63 | Item_Stam_Regen | Stamina regen |
-| 104 | 0x68 | Item_Replenish_Life | Life regen per second |
-| 105 | 0x69 | Item_Replenish_Mana | Mana regen per second |
-| 106 | 0x6A | Item_Maxdurability | Item max durability |
-| 107 | 0x6B | Item_Durability | Item current durability |
+Magic: `57 53 00 00` ("WS\0\0")
 
----
+```
+0x00  2     Magic: 0x5753
+0x02  2     Version: 1
+0x04  2     Length: 81 bytes
 
-## Character Modifier Stats (0x80–0xAF)
-
-| ID | Hex | Name | Notes |
-|---|---|---|---|
-| 138 | 0x8A | Item_Addskill_Tab | +skills to tab (sub=tab id) |
-| 139 | 0x8B | Item_Addallskills | +all skills |
-| 140 | 0x8C | Item_Addclassskills | +class skills (sub=class) |
-| 141 | 0x8D | Item_Singleskill | +N to skill X (sub=skill id) |
-| 155 | 0x9B | Item_Crushingblow | Crushing blow chance % |
-| 156 | 0x9C | Item_Openwounds | Open wounds chance % |
-| 157 | 0x9D | Item_Kick | Kick damage |
-| 158 | 0x9E | Item_Deadlystrike | Deadly strike % |
-| 159 | 0x9F | Item_Ignore_Target_Ac | Ignore target defense |
-| 160 | 0xA0 | Item_Prevent_Heal | Prevent monster healing |
-| 161 | 0xA1 | Item_Halffreezeduration | Half freeze duration |
-| 162 | 0xA2 | Item_Tohit_Demon | +attack vs demons |
-| 163 | 0xA3 | Item_Tohit_Undead | +attack vs undead |
-| 164 | 0xA4 | Item_Dmg_Demon | +% damage vs demons |
-| 165 | 0xA5 | Item_Dmg_Undead | +% damage vs undead |
+3 difficulties × 5 acts × max 9 waypoints each
+= 3 × 9 bytes (one bit per waypoint per act)
+Each byte = waypoint activation bitmask within that act
+Bit 0 of first byte = Act1 WP1 (town), always active
+```
 
 ---
 
-## Charges and Procs (0xB0–0xCF)
+## NPC Introduction Flags (variable)
 
-| ID | Hex | Name | Notes |
-|---|---|---|---|
-| 204 | 0xCC | Item_Charged | Charged skill — sub=skill id; value = (maxcharges<<8)\|curcharges |
-| 195 | 0xC3 | Item_Skillonskill | Skill-on-skill-use proc; sub=trigger skill, value=(chance<<8)\|cast skill |
-| 196 | 0xC4 | Item_Skillonattack | On-attack proc |
-| 197 | 0xC5 | Item_Skillonhit | On-hit proc |
-| 198 | 0xC6 | Item_Skillondeath | On-death proc |
+Magic: `01 77`
+
+```
+0x00  1     Magic: 0x01
+0x01  1     Magic: 0x77
+0x02  2     Version: 0x0031 (49)
+0x04  122   Introduction flags (one bit per NPC per difficulty)
+```
 
 ---
 
-## Socket and Special Stats
+## Stats Section — Bit-Stream Encoded
 
-| ID | Hex | Name | Notes |
-|---|---|---|---|
-| 214 | 0xD6 | Item_Numsockets | Number of sockets |
-| 215 | 0xD7 | Item_Pierce_Cold | Pierce cold resist % |
-| 216 | 0xD8 | Item_Pierce_Fire | Pierce fire resist % |
-| 217 | 0xD9 | Item_Pierce_Ltng | Pierce lightning resist % |
-| 218 | 0xDA | Item_Pierce_Pois | Pierce poison resist % |
+Magic: `67 66` ("gf")
+
+All stats are stored as variable-width bit fields, LSB first.
+Each entry: 9-bit stat ID + N-bit value (N from itemstatcost.txt "CSvBits").
+Ends with ID = 0x1FF (all 9 bits set).
+
+```python
+# Stat bit widths (CSvBits from itemstatcost.txt)
+STAT_BITS = {
+    0:  10,   # Strength
+    1:  10,   # Energy
+    2:  10,   # Dexterity
+    3:  10,   # Vitality
+    4:  10,   # Unused stat points
+    5:  8,    # Unused skill points
+    6:  21,   # Current HP ×256 (fixed-point)
+    7:  21,   # Max HP ×256
+    8:  21,   # Current Mana ×256
+    9:  21,   # Max Mana ×256
+    10: 21,   # Current Stamina ×256
+    11: 21,   # Max Stamina ×256
+    12: 7,    # Level
+    13: 32,   # Experience
+    14: 25,   # Gold carried
+    15: 25,   # Gold in stash
+}
+
+def read_stats_section(data: bytes, offset: int) -> dict:
+    assert data[offset:offset+2] == b'gf'
+    reader = BitReader(data, (offset + 2) * 8)
+    stats = {}
+    while True:
+        stat_id = reader.read(9)
+        if stat_id == 0x1FF:
+            break
+        bits = STAT_BITS.get(stat_id, 32)
+        stats[stat_id] = reader.read(bits)
+    return stats
+```
+
+---
+
+## Skills Section
+
+Magic: `69 66` ("if")
+
+```
+0x00  2     Magic: 0x6966 ("if")
+0x02  30    Skill allocations: one byte per skill slot
+            Slots 0–29 map to class-specific skill IDs
+            Value = number of hard points allocated (0–20)
+```
+
+### Skill Slot → Skill ID Mapping
+
+```c
+/* Amazon skill slots (0–29) → skill IDs */
+static const WORD AmazonSkills[30] = {
+    0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27, -1,-1
+};
+/* Each class has its own 28-skill layout; last 2 slots unused */
+```
+
+---
+
+## Items Section — Bit-Stream Packed
+
+Magic: `4A 4D` ("JM")
+
+```
+0x00  2     Magic: 0x4A4D ("JM")
+0x02  2     Item count
+0x04  ...   Item records (variable-length, packed bit stream)
+```
+
+### Item Bit-Stream Layout
+
+Each item is a packed bit record. Field widths from the game source:
+
+```
+Field              Bits  Notes
+──────────────────────────────────────────────────────────────────────────
+JM header          16    Must be 0x4D4A at start of each item
+Unknown            4
+Identified         1     1 = identified
+Unknown            6
+Socketed           1     1 = has sockets
+Unknown            1
+New                1     1 = recently picked up (glows)
+Unknown            2
+Ear                1     1 = this is a player ear
+Starter item       1     1 = starting item (staff/tome)
+Unknown            3
+Simple item        1     1 = no extended data (e.g., gold, arrows)
+Ethereal           1
+Unknown            1
+Personalized       1
+Unknown            1
+Runeword           1
+Unknown            5
+Version            8     0x00 = pre-1.08, 0x01 = 1.08+, 0x02 = expansion
+Unknown            2
+Location           3     0=inv 1=equip 2=belt 3=ground 4=vendor 5=socket 6=?
+Panel              4     Which inventory panel (body/inv/stash/cube)
+Column             4     Inventory column (0–9)
+Row                4     Inventory row (0–3)
+Type               4     BODYLOC if equipped
+Base code          32    4-char item code (e.g., "swrd", "helm") as packed ASCII
+── Compact items stop here if Simple==1 ──────────────────────────────────
+Number of sockets  3
+Item ID            32    Unique item GUID for this session
+Item level         7     0–127 (iLvl)
+Quality            4     ITEMQUAL_* enum
+Multiple pictures  1     If 1: 3 extra bits for alt gfx index
+Class specific     1     If 1: 11 extra bits for class affix
+── Quality-specific data follows ─────────────────────────────────────────
+  Inferior/Superior  3 bits: inferior/superior type index
+  Magic prefix       11 bits
+  Magic suffix       11 bits
+  Set item           12 bits: set ID
+  Unique item        12 bits: unique ID
+  Rare/Craft:        8+8 bits: rare prefix + suffix name IDs
+                     for 1–6 affixes: 1-bit present + 11-bit affix ID each
+── Runeword flag ──────────────────────────────────────────────────────────
+  Runeword ID        16 bits (if Runeword==1)
+── Personalized name ──────────────────────────────────────────────────────
+  Name               7×7 bits = 49 bits (7 chars × 7-bit ASCII offset)
+── Ear data (if Ear==1) ───────────────────────────────────────────────────
+  Player class       3 bits
+  Player level       7 bits
+  Player name        7×7=49 bits
+── Extended stat properties ───────────────────────────────────────────────
+  Properties encoded as: 9-bit prop ID + variable bits (from itemstatcost.txt)
+  Terminated by 0x1FF (9 bits set)
+── Socketed items ─────────────────────────────────────────────────────────
+  N items follow immediately (where N = num_sockets_filled)
+  Each is a complete item record (recursive)
+```
+
+---
+
+## Checksum Algorithm
+
+```
+DWORD D2_CalcSaveChecksum(BYTE* pFile, DWORD dwSize) {
+    DWORD checksum = 0;
+    for (DWORD i = 0; i < dwSize; i++) {
+        /* Rotate left by 1 bit, then add byte */
+        checksum = (checksum << 1) | (checksum >> 31);
+        checksum += pFile[i];
+    }
+    return checksum;
+}
+
+/* To verify: zero out bytes 0x0C–0x0F, recompute, compare to stored value */
+
 | 219 | 0xDB | Item_Damage_Bonus | Damage bonus (bow mastery) |
 | 220 | 0xDC | Item_Kick_Damage | Kick damage (Assassin) |
