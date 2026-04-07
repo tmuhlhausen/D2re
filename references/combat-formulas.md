@@ -1,284 +1,294 @@
-# D2 Save File Format — Complete Bit-Stream Reference
-# .d2s v96 (v1.10–1.14d) — Verified against community analysis and source RE
+# D2 Combat Formulas — Complete Reference
+
+All formulas verified against Jarulf's Guide v1.13 and community disassembly.
 
 ---
 
-## Header (0x00–0x14B, fixed-size)
+## Hit Chance (Physical Attack)
+
+### PvM (Player vs Monster)
 
 ```
-Off   Size  Field                    Notes
-────────────────────────────────────────────────────────────────────────────
-0x00  4     Magic                    0xAA55AA55 — validation
-0x04  4     Version                  96 (0x60) for v1.10+; 71 for v1.09
-0x08  4     File size                Total byte length of file
-0x0C  4     Checksum                 Sum of all bytes, with this field = 0
-0x10  4     Active weapon slot       0 = primary, 1 = switch
-0x14  16    Name                     ASCII, null-padded, max 15 chars + null
-0x24  1     Status flags
-                bit 0: ladder
-                bit 1: expansion (Lord of Destruction)
-                bit 2: unused
-                bit 3: hardcore
-                bit 4: died (hardcore death flag; char survives if bit4 set w/o bit3)
-                bit 5: expansion (duplicate of bit 1)
-                bit 6: unused
-                bit 7: unused
-0x25  1     Progression              Quest stage in furthest unlocked act
-0x26  2     Unknown                  Usually 0x0000
-0x28  1     Character class
-                0 = Amazon
-                1 = Necromancer
-                2 = Barbarian
-                3 = Sorceress
-                4 = Paladin
-                5 = Druid (expansion only)
-                6 = Assassin (expansion only)
-0x29  2     Unknown                  0x1010
-0x2B  1     Level                    Current character level (1–99)
-0x2C  4     Created                  Unix timestamp of creation
-0x30  4     Last played              Unix timestamp of last session
-0x34  4     Unknown                  0xFFFFFFFF
-0x38  64    Skill hotkeys            16 × DWORD skill IDs (0xFFFF = unassigned)
-0x78  4     Left mouse skill         Skill ID
-0x7C  4     Right mouse skill        Skill ID
-0x80  4     Left skill (switch)      Skill ID for weapon swap slot
-0x84  4     Right skill (switch)     Skill ID for weapon swap slot
-0x88  32    Appearance data          Menu char appearance selections
-0xA8  3     Difficulty               One byte per difficulty:
-                                       Normal, Nightmare, Hell
-                                       Bit 7 = active (currently on this diff)
-                                       Bits 0–2 = act reached (0–4)
-0xAB  4     Map seed                 Deterministic map generation seed
-0xAF  2     Mercenary dead           0 = alive, 1 = dead (costs gold to revive)
-0xB1  4     Mercenary GUID           Unit ID of merc (0 = no merc)
-0xB5  2     Mercenary name index     Index into hireling names table
-0xB7  2     Mercenary type           Encodes act + combat style + difficulty
-0xB9  4     Mercenary experience     Total XP (not level — level derived from XP)
-0xBD  144   Padding / unknown        All zeros in standard saves
+ChanceToHit% = AR / (AR + DEF) × 2 × aLvl / (aLvl + dLvl) × 100
+Clamp result to [5%, 95%]
+
+Where:
+  AR   = attacker's total Attack Rating (STAT_ATTACKRATING)
+  DEF  = defender's total Defense (STAT_ARMOR)
+  aLvl = attacker's character level
+  dLvl = defender's character level
+```
+
+### PvP (Player vs Player)
+
+```
+ChanceToHit% = AR / (AR + DEF) × 100
+Clamp to [5%, 95%]
+
+Note: Level difference is NOT used in PvP hit calculation.
+```
+
+### Blocking
+
+```
+Block% = (BlockRating × (dLvl + 15)) / 2 / dStrength
+Clamp to [0%, 75%] for non-shield (Amazon passive shield),
+         [0%, 75%] for shield
+
+Block can only occur if:
+  - Defender is not in a hit-stun state
+  - Defender is in WALK or STAND mode (not running in 1.09+)
+  - Block% roll succeeds: D2Game_Rand(100) < Block%
 ```
 
 ---
 
-## Quest Data Section (variable, after 0x14C)
+## Damage Calculation
 
-Magic header: `57 6F 6F 21` ("Woo!")
-
-```
-Off   Size  Field
-────────────────────────────────────────────
-0x00  2     Magic: 0x6677 ("Woo!" start)  — actually 0x576F6F21 as DWORD
-0x04  2     Version: 6
-0x06  2     Length: 298 bytes
-
-Quest flags for each act × difficulty:
-  3 difficulties × (Act1=6 quests + Act2=6 + Act3=6 + Act4=3 + Act5=6) = 3×27 = 81 quest entries
-  Each quest = 2 bytes bitmask:
-    bit 0:  quest log acknowledged
-    bit 1:  quest complete step 1
-    bit 2:  quest complete step 2
-    ...
-    bit 12: quest complete (fully done)
-    bit 13: quest rewarded (reward taken)
-```
-
-### Quest IDs (Act 1)
-| ID | Name | Reward |
-|---|---|---|
-| 0 | Den of Evil | Skill point, +1 to all resistances |
-| 1 | Sisters' Burial Grounds | NPC revival (Blood Raven) |
-| 2 | Tools of the Trade | Horadric Malus (socketed item) |
-| 3 | The Search for Cain | Deckard Cain joins |
-| 4 | The Forgotten Tower | Countess drops runes |
-| 5 | Sisters to the Slaughter | Andariel → Act 2 |
-
----
-
-## Waypoint Section (variable)
-
-Magic: `57 53 00 00` ("WS\0\0")
+### Physical Damage Pipeline
 
 ```
-0x00  2     Magic: 0x5753
-0x02  2     Version: 1
-0x04  2     Length: 81 bytes
+1. Roll raw damage: dmg = D2Game_Rand(maxDmg - minDmg + 1) + minDmg
+2. Apply Enhanced Damage%: dmg = dmg × (100 + ED%) / 100
+3. Apply Strength bonus (melee): dmg += dmg × StrBonus × Strength / 100 / 100
+4. Apply Dexterity bonus (bows): dmg += dmg × DexBonus × Dexterity / 100 / 100
+5. Deadly Strike (50% chance if DS available): dmg × 2
+6. Crushing Blow (reduces target current HP by fraction):
+     vs monsters: CB = current_hp / 4
+     vs players:  CB = current_hp / 10
+     vs act boss: CB = current_hp / 8
+     (CB replaces additional damage, it is not additive)
+7. Apply physical damage resistance: net_phys = dmg × (100 - DR%) / 100
+     DR% capped at 50% in v1.10+ (was uncapped in 1.09)
+```
 
-3 difficulties × 5 acts × max 9 waypoints each
-= 3 × 9 bytes (one bit per waypoint per act)
-Each byte = waypoint activation bitmask within that act
-Bit 0 of first byte = Act1 WP1 (town), always active
+### Elemental Damage
+
+```
+For each element E ∈ {Fire, Cold, Lightning, Poison, Magic}:
+  raw_elemental = roll in [min_E, max_E]
+  resist_E      = min(max_resist_E, STAT_RESIST_E) from StatList
+  net_E         = raw_elemental × (100 - resist_E) / 100
+  if net_E < 0: net_E = 0   ← negative resist (e.g., Conviction) is damage amplifier
+
+  Exception — Poison:
+    poison damage = (poisMin + rand(poisMax-poisMin)) × poisLen / 256 per frame
+    total poison  = rate × frames (not all dealt at once)
+```
+
+### Open Wounds
+
+```
+Open Wounds deals physical damage over time:
+Rate per frame (25 Hz) based on attacker's level:
+  aLvl 1–15:   rate = 8 × aLvl / 25    per frame
+  aLvl 16–30:  rate = 8 × (aLvl - 15) × 4 / 25 + 8 × 15 / 25
+  aLvl 31–45:  ...  (progressive formula)
+  
+Duration: 8 seconds (200 frames)
+Stacks: new OW proc resets the timer (does not stack)
 ```
 
 ---
 
-## NPC Introduction Flags (variable)
+## Defense and Damage Reduction
 
-Magic: `01 77`
+### Physical Damage Reduction
 
 ```
-0x00  1     Magic: 0x01
-0x01  1     Magic: 0x77
-0x02  2     Version: 0x0031 (49)
-0x04  122   Introduction flags (one bit per NPC per difficulty)
+Damage Reduction % (DR%):
+  Sources: item affixes, bone armor (Necro), cyclone armor (Druid), shout (Barb)
+  Cap:     50% in v1.10+ (patch to fix damage reduction exploits)
+
+Flat DR (absorb):
+  Applied AFTER DR%
+  net = max(0, (dmg × (100 - DR%) / 100) - flat_DR)
 ```
 
----
+### Magic Damage Reduction (MDR)
 
-## Stats Section — Bit-Stream Encoded
+```
+Applies to magic damage only (not elemental, not physical)
+No percentage form — only flat MDR from items
+Item MDR cap: no cap, but items have maximum rolls
+```
 
-Magic: `67 66` ("gf")
+### Elemental Absorb
 
-All stats are stored as variable-width bit fields, LSB first.
-Each entry: 9-bit stat ID + N-bit value (N from itemstatcost.txt "CSvBits").
-Ends with ID = 0x1FF (all 9 bits set).
-
-```python
-# Stat bit widths (CSvBits from itemstatcost.txt)
-STAT_BITS = {
-    0:  10,   # Strength
-    1:  10,   # Energy
-    2:  10,   # Dexterity
-    3:  10,   # Vitality
-    4:  10,   # Unused stat points
-    5:  8,    # Unused skill points
-    6:  21,   # Current HP ×256 (fixed-point)
-    7:  21,   # Max HP ×256
-    8:  21,   # Current Mana ×256
-    9:  21,   # Max Mana ×256
-    10: 21,   # Current Stamina ×256
-    11: 21,   # Max Stamina ×256
-    12: 7,    # Level
-    13: 32,   # Experience
-    14: 25,   # Gold carried
-    15: 25,   # Gold in stash
-}
-
-def read_stats_section(data: bytes, offset: int) -> dict:
-    assert data[offset:offset+2] == b'gf'
-    reader = BitReader(data, (offset + 2) * 8)
-    stats = {}
-    while True:
-        stat_id = reader.read(9)
-        if stat_id == 0x1FF:
-            break
-        bits = STAT_BITS.get(stat_id, 32)
-        stats[stat_id] = reader.read(bits)
-    return stats
+```
+Applied in this order:
+  1. Resistance reduces damage: E_after_res = E × (100 - res%) / 100
+  2. Flat absorb heals: heal = min(flat_absorb, E_after_res)
+     hp = min(maxhp, hp + heal)
+     E_after_res -= heal
+  3. Percent absorb heals: heal = E_after_res × absorb% / 100
+     hp = min(maxhp, hp + heal)
+     E_after_res -= heal
+  Final damage = max(0, E_after_res)
 ```
 
 ---
 
-## Skills Section
+## Attack Speed and Frame Rate
 
-Magic: `69 66` ("if")
+### Character Speed Formula
 
 ```
-0x00  2     Magic: 0x6966 ("if")
-0x02  30    Skill allocations: one byte per skill slot
-            Slots 0–29 map to class-specific skill IDs
-            Value = number of hard points allocated (0–20)
+Frames per attack = ceil(256 / (IAS_product × base_weapon_speed))
+
+Where IAS_product combines all IAS sources using the "breakpoint" table.
+Each character class has a different frame rate table.
+
+IAS soft cap: diminishing returns beyond ~75 IAS (class-dependent).
 ```
 
-### Skill Slot → Skill ID Mapping
+### Faster Hit Recovery (FHR) Breakpoints (Sorceress example)
 
-```c
-/* Amazon skill slots (0–29) → skill IDs */
-static const WORD AmazonSkills[30] = {
-    0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27, -1,-1
-};
-/* Each class has its own 28-skill layout; last 2 slots unused */
+| FHR% | Frames to recover |
+|---|---|
+| 0 | 15 |
+| 5 | 14 |
+| 9 | 13 |
+| 14 | 12 |
+| 20 | 11 |
+| 30 | 10 |
+| 42 | 9 |
+| 60 | 8 |
+| 86 | 7 |
+| 142 | 6 |
+| 280 | 5 |
+
+### Faster Cast Rate (FCR) Breakpoints (Sorceress Lightning)
+
+| FCR% | Cast frames |
+|---|---|
+| 0 | 19 |
+| 9 | 18 |
+| 20 | 17 |
+| 37 | 16 |
+| 63 | 15 |
+| 105 | 14 |
+| 200 | 13 |
+
+---
+
+## Life and Mana Calculations
+
+### Displayed Life/Mana
+
+```
+displayed_HP = STAT_HITPOINTS / 256    (stat is stored fixed-point ×256)
+displayed_MP = STAT_MANA / 256
+displayed_ST = STAT_STAMINA / 256
+```
+
+### Life Per Level / Life from Vitality
+
+```
+Life from Vitality:
+  Amazon:      3 life per vitality
+  Necromancer: 2 life per vitality
+  Barbarian:   4 life per vitality
+  Sorceress:   2 life per vitality
+  Paladin:     3 life per vitality
+  Druid:       2.5 life per vitality (stored as 5/2 per 2 vit)
+  Assassin:    3 life per vitality
+
+Life per Level (from class data tables):
+  Amazon: 2, Necro: 1.5, Barb: 2, Sorc: 1, Pala: 2, Druid: 1.5, Asn: 1.5
 ```
 
 ---
 
-## Items Section — Bit-Stream Packed
+## Experience
 
-Magic: `4A 4D` ("JM")
-
-```
-0x00  2     Magic: 0x4A4D ("JM")
-0x02  2     Item count
-0x04  ...   Item records (variable-length, packed bit stream)
-```
-
-### Item Bit-Stream Layout
-
-Each item is a packed bit record. Field widths from the game source:
+### XP from Kill
 
 ```
-Field              Bits  Notes
-──────────────────────────────────────────────────────────────────────────
-JM header          16    Must be 0x4D4A at start of each item
-Unknown            4
-Identified         1     1 = identified
-Unknown            6
-Socketed           1     1 = has sockets
-Unknown            1
-New                1     1 = recently picked up (glows)
-Unknown            2
-Ear                1     1 = this is a player ear
-Starter item       1     1 = starting item (staff/tome)
-Unknown            3
-Simple item        1     1 = no extended data (e.g., gold, arrows)
-Ethereal           1
-Unknown            1
-Personalized       1
-Unknown            1
-Runeword           1
-Unknown            5
-Version            8     0x00 = pre-1.08, 0x01 = 1.08+, 0x02 = expansion
-Unknown            2
-Location           3     0=inv 1=equip 2=belt 3=ground 4=vendor 5=socket 6=?
-Panel              4     Which inventory panel (body/inv/stash/cube)
-Column             4     Inventory column (0–9)
-Row                4     Inventory row (0–3)
-Type               4     BODYLOC if equipped
-Base code          32    4-char item code (e.g., "swrd", "helm") as packed ASCII
-── Compact items stop here if Simple==1 ──────────────────────────────────
-Number of sockets  3
-Item ID            32    Unique item GUID for this session
-Item level         7     0–127 (iLvl)
-Quality            4     ITEMQUAL_* enum
-Multiple pictures  1     If 1: 3 extra bits for alt gfx index
-Class specific     1     If 1: 11 extra bits for class affix
-── Quality-specific data follows ─────────────────────────────────────────
-  Inferior/Superior  3 bits: inferior/superior type index
-  Magic prefix       11 bits
-  Magic suffix       11 bits
-  Set item           12 bits: set ID
-  Unique item        12 bits: unique ID
-  Rare/Craft:        8+8 bits: rare prefix + suffix name IDs
-                     for 1–6 affixes: 1-bit present + 11-bit affix ID each
-── Runeword flag ──────────────────────────────────────────────────────────
-  Runeword ID        16 bits (if Runeword==1)
-── Personalized name ──────────────────────────────────────────────────────
-  Name               7×7 bits = 49 bits (7 chars × 7-bit ASCII offset)
-── Ear data (if Ear==1) ───────────────────────────────────────────────────
-  Player class       3 bits
-  Player level       7 bits
-  Player name        7×7=49 bits
-── Extended stat properties ───────────────────────────────────────────────
-  Properties encoded as: 9-bit prop ID + variable bits (from itemstatcost.txt)
-  Terminated by 0x1FF (9 bits set)
-── Socketed items ─────────────────────────────────────────────────────────
-  N items follow immediately (where N = num_sockets_filled)
-  Each is a complete item record (recursive)
+base_xp = monster.experience[difficulty]   (from monstats.txt)
+
+Group bonus (multiple killers in party):
+  1 killer: base_xp × 1.0
+  2 killers: base_xp × 1.0 (no penalty in v1.10+)
+  3 killers: base_xp × 0.9
+  4 killers: base_xp × 0.825
+  5–8 killers: base_xp × (0.825 - (n-4)×0.05)  (diminishing)
+
+Level difference penalty:
+  If |pLvl - mLvl| > 10:
+    penalty = (|diff| - 10) × 5%  per level beyond 10
+    xp = base_xp × max(5%, 100% - penalty)
+```
+
+### XP Loss on Death
+
+```
+PvM death:
+  Normal:     0% XP loss
+  Nightmare:  5% XP loss (of XP earned in current level)
+  Hell:       10% XP loss
+
+PvP death:
+  No XP loss regardless of difficulty
+
+Hardcore: no XP loss (character dies permanently instead)
 ```
 
 ---
 
-## Checksum Algorithm
+## Skill Damage Formulas
 
-```c
-DWORD D2_CalcSaveChecksum(BYTE* pFile, DWORD dwSize) {
-    DWORD checksum = 0;
-    for (DWORD i = 0; i < dwSize; i++) {
-        /* Rotate left by 1 bit, then add byte */
-        checksum = (checksum << 1) | (checksum >> 31);
-        checksum += pFile[i];
-    }
-    return checksum;
-}
+### Fireball (Sorceress)
 
-/* To verify: zero out bytes 0x0C–0x0F, recompute, compare to stored value */
+```
+min_fire = 8 × slvl + (base_min)
+max_fire = 8 × slvl + (base_max)
+synergy bonus from Inferno: +2% fire damage per level
+synergy bonus from Firebolt: +4% fire damage per level
+synergy bonus from Meteor:   +4% fire damage per level
+```
+
+### Frozen Orb (Sorceress)
+
+```
+min_cold = 20 + 2 × slvl
+max_cold = 30 + 3 × slvl
+freeze duration = (50 + 10 × slvl) × difficulty_modifier / 25  frames
+(difficulty_modifier: Normal=1.0, NM=0.5, Hell=0.25)
+```
+
+### Zeal (Paladin)
+
+```
+attacks per cast = min(2 + slvl, 5)   (caps at 5 hits at level 3)
+enhanced damage = 20 × slvl %
+synergy from Sacrifice: +5% ED per level
+The attack speed of each Zeal hit follows the standard melee formula.
+```
+
+### Whirlwind (Barbarian)
+
+```
+WW hits per frame depends on weapon speed:
+  Step size = 15 (sub-tiles) per tick while spinning
+  Hit frequency = every (weapon_frame_rate / 2) frames
+  Minimum 4 hits total regardless of weapon speed
+WW cannot be used with 2H bows/xbows.
+```
+
+---
+
+## Conviction Aura Mechanics
+
+```
+Conviction reduces monster resistances below their natural floor.
+For a monster immune to fire (e.g., 110% resist):
+  effective_resist = 110 - (Conviction_reduction / 5)
+  If result < 100, immunity is broken.
+  Example: slvl 20 Conviction (-150%): 110 - 30 = 80% → fire hits at 20% damage
+
+Party members do NOT benefit from breaking immunities — only the Paladin.
+Conviction stacks multiplicatively with Lower Resist (Necro curse).
+```
 /* To write: zero bytes 0x0C–0x0F, compute, write result back */
 ```
