@@ -1,327 +1,200 @@
-# D2R — Diablo II: Resurrected Deep Reference
-# Engine changes, 64-bit struct layout, CASC access, JSON overrides, modding
+# D2 Network Packet Reference
+
+All values little-endian. Packet command byte is always the first byte.
+Server packets flow Game Server → Client. Client packets flow Client → Game Server.
 
 ---
 
-## Architecture Overview
+## Client → Server Packets
 
-| Feature | Classic D2 (1.14d) | D2 Resurrected |
-|---|---|---|
-| Process | 32-bit, single .exe | 64-bit, single .exe |
-| Pointer width | 4 bytes (DWORD) | 8 bytes (QWORD/uintptr_t) |
-| Archive | MPQ v1/v2 | CASC (Content Addressable Storage) |
-| Renderer | DirectX 8 / Software | DirectX 12 (PC), Metal (Mac) |
-| Data tables | Binary .bin compiled at startup | JSON + legacy .bin loader |
-| Save format | .d2s local only | .d2s + Battle.net cloud sync |
-| Networking | D2Net (custom TCP) | Battle.net 2.0 relay + DTLS |
-| Sprites | DC6 / DCC | DCC (legacy) + .anim container |
-| Resolution | 800×600 fixed | Arbitrary (4K, ultrawide) |
-| Physics | Tile-locked | Smooth sub-pixel interpolation |
-| Modding API | D2Mod / INI patches | Official mod framework (mpq-style directories) |
+| Cmd | Name | Length | Description |
+|---|---|---|---|
+| 0x01 | WalkToLocation | 5 | Walk to X,Y |
+| 0x02 | WalkToEntity | 9 | Walk to unit (type+id) |
+| 0x03 | RunToLocation | 5 | Run to X,Y |
+| 0x04 | RunToEntity | 9 | Run to unit |
+| 0x05 | LeftSkillOnLocation | 9 | Cast left skill at X,Y |
+| 0x06 | LeftSkillOnEntity | 13 | Cast left skill on unit |
+| 0x07 | LeftSkillOnEntityEx | 13 | Cast left skill on unit (repeated) |
+| 0x08 | ShiftLeftSkillOnLocation | 9 | |
+| 0x09 | ShiftLeftSkillOnEntity | 13 | |
+| 0x0A | ShiftLeftSkillOnEntityEx | 13 | |
+| 0x0C | RightSkillOnLocation | 9 | Cast right skill at X,Y |
+| 0x0D | RightSkillOnEntity | 13 | Cast right skill on unit |
+| 0x0E | RightSkillOnEntityEx | 13 | |
+| 0x0F | ShiftRightSkillOnLocation | 9 | |
+| 0x10 | ShiftRightSkillOnEntity | 13 | |
+| 0x13 | InteractWithEntity | 9 | Interact / pick up item from ground |
+| 0x14 | OverheadMessage | var | Say text overhead |
+| 0x15 | ChatMessage | var | Chat message |
+| 0x16 | PickupItem | 13 | Pick up item from ground |
+| 0x17 | DropItem | 5 | Drop held item |
+| 0x18 | DropGold | 9 | Drop gold |
+| 0x19 | PickupGold | 9 | Pick up gold |
+| 0x1A | ItemToCursor | 5 | Pick up item to cursor from inventory |
+| 0x1C | IdentifyItem | 9 | Use scroll to ID item |
+| 0x1D | UnshiftItem | 5 | |
+| 0x20 | UseItem | 13 | Use item (potion, scroll, etc.) |
+| 0x21 | InsertItem | var | Insert item into socket |
+| 0x23 | SelectSkill | 9 | Assign skill to hand |
+| 0x26 | Respawn | 1 | Respawn after death |
+| 0x2F | GameLogon | var | Enter game world (initial sync) |
+| 0x34 | NpcInit | 9 | Open NPC dialog |
+| 0x38 | NpcBuy | var | Purchase item from NPC |
+| 0x39 | NpcSell | var | Sell item to NPC |
+| 0x3A | NpcIdentifyItems | 5 | Use Deckard Cain ID service |
+| 0x3D | PingResponse | 5 | Respond to server ping |
+| 0x50 | EnterPortal | 5 | Enter town portal / red portal |
+| 0x58 | CharacterPhrase | 9 | Triggers character voice clip |
+| 0x59 | UpdateStats | 1 | Request stat sync from server |
+| 0x5D | QuestMessage | 13 | Quest-related trigger |
 
----
-
-## 64-bit Struct Layout Changes
-
-When all pointers grow from 4→8 bytes, struct sizes change significantly.
-**Critical rule: Never assume Classic D2 field offsets in D2R code.**
-
-### D2R UnitAny (Approximate — Subject to Patch Changes)
+### Detailed Packet Structs
 
 ```c
-/* D2R UnitAny — 64-bit build, approximate offsets */
-typedef struct D2R_UnitAny {
-    DWORD            dwType;          // 0x00
-    DWORD            dwClassId;       // 0x04
-    DWORD            dwMode;          // 0x08
-    DWORD            dwUnitId;        // 0x0C
-    DWORD            dwAct;           // 0x10
-    DWORD            _pad0;           // 0x14 — alignment pad
-    struct ActMisc*  pAct;            // 0x18 — 8 bytes (was 0x14 in classic)
-    DWORD            dwSeed[2];       // 0x20
-    DWORD            dwInitSeed;      // 0x28
-    DWORD            _pad1;           // 0x2C
-    union {                           // 0x30 — pointer, 8 bytes
-        struct PlayerData*  pPlayerData;
-        struct MonsterData* pMonsterData;
-        struct ItemData*    pItemData;
-        /* ... */
-    };
-    /* ... fields shifted by 8+ bytes vs classic ... */
-    struct StatList* pStatList;       // ~0x68 (was 0x48)
-    struct Inventory*pInventory;      // ~0x70 (was 0x4C)
-    struct Path*     pPath;           // ~0x78 (was 0x50)
-    DWORD            dwFlags;         // ~0xE0 (was 0xC8)
-    struct UnitAny*  pListNext;       // ~0x118 (was 0xE8)
-    /* ... */
-} D2R_UnitAny;
-
-/* IMPORTANT: Use pattern scanning or live CE inspection to find
-   current D2R offsets — they change frequently with patches.
-   Do NOT hardcode offsets for D2R without version pinning. */
-```
-
-### D2R Path Struct
-
-```c
-typedef struct D2R_Path {
-    WORD    wPosX;           // 0x00
-    WORD    _p0;
-    WORD    wPosY;           // 0x04
-    WORD    _p1;
-    WORD    wTargetX;        // 0x08
-    WORD    wTargetY;        // 0x0A
-    DWORD   _unk;            // 0x0C
-    struct  Room1* pRoom1;   // 0x10 — 8 bytes in D2R
-    struct  Room1* pRoomNext;// 0x18
-    WORD    wPrePosX;        // 0x20
-    WORD    wPrePosY;        // 0x22
-    DWORD   _unk2;
-    struct  UnitAny* pUnit;  // 0x28 — 8 bytes
-    DWORD   dwFlags;         // 0x30
-} D2R_Path;
-```
-
----
-
-## CASC Archive Access
-
-D2R uses the CASC storage format instead of MPQ. Use CascLib for access.
-
-```c
-#include "CascLib.h"
-
-/* ── Open D2R storage ── */
-HANDLE hStorage = NULL;
-const char* d2rPath = "C:\\Program Files (x86)\\Diablo II Resurrected";
-
-if (!CascOpenStorage(d2rPath, 0, &hStorage)) {
-    fprintf(stderr, "CASC open failed: %lu\n", GetLastError());
-    return;
-}
-
-/* ── List all files (enumerate the CASC manifest) ── */
-CASC_FIND_DATA findData;
-HANDLE hFind = CascFindFirstFile(hStorage, "*", &findData, NULL);
-if (hFind != INVALID_HANDLE_VALUE) {
-    do {
-        printf("%s (%llu bytes)\n", findData.szFileName, findData.FileSize);
-    } while (CascFindNextFile(hFind, &findData));
-    CascFindClose(hFind);
-}
-
-/* ── Read a specific file ── */
-HANDLE hFile = NULL;
-/* D2R path format: "data:data/global/excel/weapons.txt" */
-/* The "data:" prefix is required to access game data files */
-if (CascOpenFile(hStorage, "data:data/global/excel/weapons.txt",
-                  CASC_LOCALE_ALL, CASC_OPEN_BY_NAME, &hFile)) {
-    DWORD dwSize, dwRead;
-    CascGetFileSize(hFile, &dwSize);
-    char* buf = (char*)malloc(dwSize + 1);
-    if (CascReadFile(hFile, buf, dwSize, &dwRead)) {
-        buf[dwRead] = '\0';
-        /* buf now contains the TSV data */
-    }
-    CascCloseFile(hFile);
-    free(buf);
-}
-
-CascCloseStorage(hStorage);
-```
-
-### Python CASC Access (via casclib Python wrapper)
-
-```python
-# pip install pycasc  (unofficial wrapper around CascLib)
-import pycasc
-
-storage = pycasc.open("C:/Program Files (x86)/Diablo II Resurrected")
-
-# List files matching a pattern
-for entry in storage.find("*.txt"):
-    print(entry.name, entry.size)
-
-# Read a specific file
-data = storage.read("data:data/global/excel/weapons.txt")
-lines = data.decode("utf-8").split("\r\n")
-headers = lines[0].split("\t")
-rows = [dict(zip(headers, l.split("\t"))) for l in lines[2:] if l.strip()]
-# (Skip first row = headers, second row = column types)
-```
-
----
-
-## JSON Override System
-
-D2R supports data overrides through JSON files placed in the mod directory.
-This is the official D2R modding API.
-
-### File Structure
-
-```
-<D2R install>/mods/<modname>/
-  manifest.json           ← mod metadata
-  data/
-    global/
-      excel/
-        weapons.txt.json  ← override weapons table
-        skills.txt.json   ← override skills
-        monstats.txt.json ← override monsters
-      ui/
-        Loading screens, custom strings
-    hd/                   ← HD asset overrides
-      global/
-        items/            ← 3D model overrides
-```
-
-### manifest.json
-
-```json
-{
-  "name": "MyD2Mod",
-  "savePath": "MyD2Mod",
-  "description": "My D2R mod",
-  "expansion": true,
-  "author": "Author",
-  "version": "1.0.0",
-  "website": "https://example.com"
-}
-```
-
-### JSON Table Override Format
-
-```json
-// weapons.txt.json — override specific rows
-// Array of objects; each object matches by "name" field
-// Only specified fields are changed; others remain default
-{
-  "Weapons": [
-    {
-      "name": "Short Sword",
-      "mindam": 3,
-      "maxdam": 15,
-      "speed": -10,
-      "StrBonus": 80
-    },
-    {
-      "name": "Phase Blade",
-      "maxdam": 180
-    }
-  ]
-}
-```
-
-### Modifying String Tables
-
-```json
-// string.json — add or override string table entries
-{
-  "String": [
-    {
-      "Key": "ItemStats1e",
-      "enUS": "+{0}% Enhanced Damage",
-      "Comments": "Custom tooltip override"
-    },
-    {
-      "Key": "MyCustomString",
-      "enUS": "Hello from my mod!"
-    }
-  ]
-}
-```
-
----
-
-## D2R Rendering Pipeline Hooks
-
-D2R uses DirectX 12 with a command list architecture. Unlike D2 Classic's
-immediate-mode DirectDraw, D2R batches draw calls.
-
-```c
-/* D2R still exposes a GfxEnvironment object for sprite submission */
-/* Hooking: intercept the DX12 Present call via DXGI swap chain vtable */
-
-typedef HRESULT (STDMETHODCALLTYPE *Present_t)(IDXGISwapChain*, UINT, UINT);
-static Present_t oPresent = NULL;
-
-HRESULT STDMETHODCALLTYPE hk_Present(IDXGISwapChain* pSwapChain, UINT SyncInterval, UINT Flags) {
-    /* Your per-frame overlay logic here */
-    /* e.g., draw ImGui overlay using D3D12 backend */
-    return oPresent(pSwapChain, SyncInterval, Flags);
-}
-
-/* Hook via swap chain vtable (offset 8 = Present) */
-void Hook_DX12Present(void) {
-    /* Get swap chain from D3D12 device */
-    /* Modify vtable entry 8 */
-    void** pVtable = *(void***)pSwapChain;
-    DWORD dwOld;
-    VirtualProtect(&pVtable[8], sizeof(void*), PAGE_READWRITE, &dwOld);
-    oPresent = (Present_t)pVtable[8];
-    pVtable[8] = hk_Present;
-    VirtualProtect(&pVtable[8], sizeof(void*), dwOld, &dwOld);
-}
-```
-
----
-
-## D2R .anim Format
-
-The new `.anim` container wraps legacy DCC animations with a metadata header
-and supports smooth interpolation between frames.
-
-```c
-/* .anim file header (D2R specific) */
 #pragma pack(push, 1)
-typedef struct AnimHeader {
-    DWORD dwMagic;           // 0x44494C42 ("DILB" = Diablo)
-    DWORD dwVersion;         // 2 for D2R
-    DWORD dwDirections;
-    DWORD dwFramesPerDir;
-    float fPlaybackSpeed;    // FPS multiplier for smooth animation
-    DWORD dwDCCOffset;       // byte offset to embedded DCC data
-    DWORD dwDCCSize;         // size of embedded DCC block
-    DWORD dwFlags;           // ANIMFLAG_LOOP, ANIMFLAG_PINGPONG, etc.
-} AnimHeader;
+
+// 0x01 — Walk to location
+typedef struct C_WalkToLocation {
+    BYTE cmd;       // 0x01
+    WORD wX;
+    WORD wY;
+} C_WalkToLocation;
+
+// 0x13 — Interact with entity / pick up ground item
+typedef struct C_InteractWithEntity {
+    BYTE  cmd;          // 0x13
+    DWORD dwEntityType; // UnitType enum
+    DWORD dwEntityId;   // runtime GUID
+} C_InteractWithEntity;
+
+// 0x23 — Select skill for hand
+typedef struct C_SelectSkill {
+    BYTE  cmd;      // 0x23
+    WORD  wSkillId;
+    BYTE  bHand;    // 0 = left, 0x80 = right
+    WORD  wItemId;  // FFFF if no item
+    WORD  _pad;
+} C_SelectSkill;
+
+// 0x3D — Ping response (client replies with server's nonce)
+typedef struct C_PingResponse {
+    BYTE  cmd;      // 0x3D
+    DWORD dwNonce;  // echoed from server ping packet
+} C_PingResponse;
+
 #pragma pack(pop)
 ```
 
 ---
 
-## D2R Memory Reading (Cheat Engine / External Tooling)
+## Server → Client Packets
 
-Pattern signatures for D2R (updated frequently — use these as examples):
+| Cmd | Name | Length | Description |
+|---|---|---|---|
+| 0x01 | GameLoading | 1 | Game world is loading |
+| 0x02 | GameFlags | 8 | Flags for current game (expansion, ladder, etc.) |
+| 0x05 | UnitSkillList | var | Skills that a unit has |
+| 0x06 | SetSkillHotkey | 6 | Assigns skill to hotkey slot |
+| 0x07 | ItemWorldActionB1 | var | Item on ground (appear / pickup animation) |
+| 0x08 | ItemWorldActionB2 | var | Item move/throw |
+| 0x09 | ClearCursor | 1 | Clears cursor item client-side |
+| 0x0A | Relator1 | 13 | Relationship update (party, town portal) |
+| 0x0B | Relator2 | 13 | |
+| 0x0F | HpMpUpdate | 5 | Fast HP/MP update for self |
+| 0x15 | EventMessage | var | Chat / system message |
+| 0x17 | AssignSkill | var | Assign skill to unit slot |
+| 0x18 | ShowUnit | 12 | Reveal unit on map |
+| 0x19 | QuestSpecialAction | var | Quest trigger (cain, pandemonium, etc.) |
+| 0x1A | GameObjectAction | 13 | Object state change (door, chest, shrine) |
+| 0x1D | NpcHit | var | NPC combat log entry |
+| 0x1E | PlayerStop | 11 | Unit stops movement |
+| 0x1F | ObjectStop | 11 | |
+| 0x20 | UnitStop | 13 | Generic unit stop |
+| 0x21 | UnitReanimate | 13 | Unit revived |
+| 0x26 | RemoveObject | 9 | Remove unit from client |
+| 0x27 | GameChat | var | Chat message in game |
+| 0x28 | NpcMove | 11 | NPC walk target |
+| 0x29 | NpcMoveToTarget | 16 | NPC moves toward entity |
+| 0x2A | NpcState | 13 | NPC mode/state change |
+| 0x2C | NpcAction | 16 | NPC performs action (attack, cast) |
+| 0x2E | PlayerMove | 16 | Player walk |
+| 0x2F | PlayerMoveToTarget | 21 | Player run to entity |
+| 0x30 | PlayerState | 14 | Player mode change |
+| 0x34 | PlayerStop2 | 13 | |
+| 0x51 | LoadAct | 14 | Load new act data |
+| 0x59 | ExperienceByteA | var | XP update |
+| 0x5A | ExperienceWordA | var | XP update (word form) |
+| 0x5B | ExperienceDWordA | var | XP update (dword form) |
+| 0x5C | AttributeByteA | 4 | Stat update (byte) |
+| 0x5D | AttributeWordA | 5 | Stat update (word) |
+| 0x5E | AttributeDWordA | 7 | Stat update (dword) |
+| 0x61 | StateNotification | var | Status effect applied/removed |
+| 0x62 | GameHandshake | 4 | Initial connection ACK |
+| 0x6D | UpdateItemStats | var | Full item stat block |
+| 0x6E | UseItem | 9 | Item use confirmed |
+| 0x77 | Pong | 5 | Server ping packet |
+| 0x7A | DelayedState | var | State with delay |
+| 0x81 | TradeAction | var | Trade protocol |
+| 0x82 | TradeAccepted | 1 | Trade accepted by other party |
+| 0x8F | AssignHotkey | 6 | |
+| 0x95 | UnitAssign | var | Assign entity to client (full init) |
+| 0x96 | ReassignPlayer | 11 | |
+| 0x97 | MultiUnitAssign | var | Multiple unit assignments |
+| 0x9B | NpcInfo | var | NPC dialog content |
+| 0x9C | TownPortalState | 8 | Portal opened/closed |
 
-```python
-# D2R memory scanner patterns (as of patch 2.6.x, subject to change)
-# All are relative to D2R.exe base
+### Detailed Packet Structs
 
-PATTERNS = {
-    # Find UnitAny* for local player
-    "player_unit": {
-        "sig":  b"\x48\x8B\x05\x00\x00\x00\x00\x48\x85\xC0\x74",
-        "mask": b"xxx????xxxx",
-        "deref_offset": 3,  # 4-byte RIP-relative offset at byte 3
-        "type": "rip_relative",
-    },
-    # Find game tick counter
-    "game_tick": {
-        "sig":  b"\xFF\x05\x00\x00\x00\x00\x48\x8B",
-        "mask": b"xx????xx",
-        "deref_offset": 2,
-        "type": "rip_relative",
-    },
-}
+```c
+#pragma pack(push, 1)
 
-def find_rip_relative(process_handle, base_addr, pattern):
-    """Scan for a RIP-relative pattern and resolve the final address."""
-    sig   = pattern["sig"]
-    found = scan_memory(process_handle, base_addr, sig, pattern["mask"])
-    if not found: return None
-    # RIP-relative: read 4-byte signed offset at found+deref_offset
-    rva_bytes = read_memory(process_handle, found + pattern["deref_offset"], 4)
-    rva = int.from_bytes(rva_bytes, 'little', signed=True)
-    # RIP = found + deref_offset + 4
-    return found + pattern["deref_offset"] + 4 + rva
+// 0x0F — HP/MP fast update
+typedef struct S_HpMpUpdate {
+    BYTE cmd;       // 0x0F
+    WORD wHpPct;    // (curHP / maxHP) * 32768
+    WORD wMpPct;    // (curMP / maxMP) * 32768
+} S_HpMpUpdate;
+
+// 0x5C — Attribute update (byte encoding)
+typedef struct S_AttributeByteA {
+    BYTE cmd;       // 0x5C
+    WORD wStatId;   // STAT_* enum
+    BYTE bValue;    // new value
+} S_AttributeByteA;
+
+// 0x5D — Attribute update (word encoding)
+typedef struct S_AttributeWordA {
+    BYTE cmd;
+    WORD wStatId;
+    WORD wValue;
+} S_AttributeWordA;
+
+// 0x5E — Attribute update (dword encoding)
+typedef struct S_AttributeDWordA {
+    BYTE  cmd;
+    WORD  wStatId;
+    DWORD dwValue;
+} S_AttributeDWordA;
+
+// 0x77 — Ping (server sends, client echoes with 0x3D)
+typedef struct S_Ping {
+    BYTE  cmd;      // 0x77
+    DWORD dwNonce;
+} S_Ping;
+
+// 0x95 — Unit assignment header (variable body follows)
+typedef struct S_UnitAssign_Header {
+    BYTE  cmd;          // 0x95
+    BYTE  bUnitType;    // UnitType enum
+    DWORD dwClassId;    // class/npc/item ID
+    DWORD dwUnitId;     // runtime GUID
+    DWORD dwMode;       // animation mode
+    WORD  wX;
+    WORD  wY;
+    // BYTE bLife — for monsters: HP% encoded as value/128
+    // Additional variable data follows depending on bUnitType
+} S_UnitAssign_Header;
+
+#pragma pack(pop)
 ```
