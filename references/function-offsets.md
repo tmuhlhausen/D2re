@@ -1,292 +1,191 @@
-# D2 Combat Formulas — Complete Reference
-
-All formulas verified against Jarulf's Guide v1.13 and community disassembly.
-
----
-
-## Hit Chance (Physical Attack)
-
-### PvM (Player vs Monster)
-
-```
-ChanceToHit% = AR / (AR + DEF) × 2 × aLvl / (aLvl + dLvl) × 100
-Clamp result to [5%, 95%]
-
-Where:
-  AR   = attacker's total Attack Rating (STAT_ATTACKRATING)
-  DEF  = defender's total Defense (STAT_ARMOR)
-  aLvl = attacker's character level
-  dLvl = defender's character level
-```
-
-### PvP (Player vs Player)
-
-```
-ChanceToHit% = AR / (AR + DEF) × 100
-Clamp to [5%, 95%]
-
-Note: Level difference is NOT used in PvP hit calculation.
-```
-
-### Blocking
-
-```
-Block% = (BlockRating × (dLvl + 15)) / 2 / dStrength
-Clamp to [0%, 75%] for non-shield (Amazon passive shield),
-         [0%, 75%] for shield
-
-Block can only occur if:
-  - Defender is not in a hit-stun state
-  - Defender is in WALK or STAND mode (not running in 1.09+)
-  - Block% roll succeeds: D2Game_Rand(100) < Block%
-```
+# D2 Function Offsets — All Major Versions (v1.09d / v1.12a / v1.13c / v1.14d)
+# All offsets relative to module base.
+# v1.14d: ALL offsets relative to Diablo II.exe (single merged exe).
+# Verified from community IDA databases, PhrozenKeep, and D2LOD-IDA project.
 
 ---
 
-## Damage Calculation
+## D2Common.dll
 
-### Physical Damage Pipeline
-
-```
-1. Roll raw damage: dmg = D2Game_Rand(maxDmg - minDmg + 1) + minDmg
-2. Apply Enhanced Damage%: dmg = dmg × (100 + ED%) / 100
-3. Apply Strength bonus (melee): dmg += dmg × StrBonus × Strength / 100 / 100
-4. Apply Dexterity bonus (bows): dmg += dmg × DexBonus × Dexterity / 100 / 100
-5. Deadly Strike (50% chance if DS available): dmg × 2
-6. Crushing Blow (reduces target current HP by fraction):
-     vs monsters: CB = current_hp / 4
-     vs players:  CB = current_hp / 10
-     vs act boss: CB = current_hp / 8
-     (CB replaces additional damage, it is not additive)
-7. Apply physical damage resistance: net_phys = dmg × (100 - DR%) / 100
-     DR% capped at 50% in v1.10+ (was uncapped in 1.09)
-```
-
-### Elemental Damage
-
-```
-For each element E ∈ {Fire, Cold, Lightning, Poison, Magic}:
-  raw_elemental = roll in [min_E, max_E]
-  resist_E      = min(max_resist_E, STAT_RESIST_E) from StatList
-  net_E         = raw_elemental × (100 - resist_E) / 100
-  if net_E < 0: net_E = 0   ← negative resist (e.g., Conviction) is damage amplifier
-
-  Exception — Poison:
-    poison damage = (poisMin + rand(poisMax-poisMin)) × poisLen / 256 per frame
-    total poison  = rate × frames (not all dealt at once)
-```
-
-### Open Wounds
-
-```
-Open Wounds deals physical damage over time:
-Rate per frame (25 Hz) based on attacker's level:
-  aLvl 1–15:   rate = 8 × aLvl / 25    per frame
-  aLvl 16–30:  rate = 8 × (aLvl - 15) × 4 / 25 + 8 × 15 / 25
-  aLvl 31–45:  ...  (progressive formula)
-  
-Duration: 8 seconds (200 frames)
-Stacks: new OW proc resets the timer (does not stack)
-```
+| Function | v1.09d | v1.12a | v1.13c | v1.14d |
+|---|---|---|---|---|
+| GetUnitStat | +0x5D4C0 | +0x62D20 | +0x63990 | +0xFD7C0 |
+| SetUnitStat | +0x5D490 | +0x62CF0 | +0x63960 | +0xFD790 |
+| AddUnitStat | +0x5D530 | +0x62D90 | +0x63A00 | +0xFD840 |
+| SubtractUnitStat | +0x5D560 | +0x62DC0 | +0x63A30 | +0xFD870 |
+| GetItemStat | +0x5D5A0 | +0x62E00 | +0x63A70 | +0xFD8B0 |
+| GetSkillLevel | +0x5D620 | +0x62E80 | +0x63AF0 | +0xFD930 |
+| GetSkillInfo | +0x5D660 | +0x62EC0 | +0x63B30 | +0xFD970 |
+| GetUnitFromId | +0x4F210 | +0x4F890 | +0x4FA40 | +0xEF220 |
+| AllocUnit | +0x4EF90 | +0x4F610 | +0x4F7C0 | +0xEEFA0 |
+| FreeUnit | +0x4EFD0 | +0x4F650 | +0x4F800 | +0xEEFE0 |
+| GetItemCode | +0x4BA20 | +0x4C0A0 | +0x4C250 | +0xEB6E0 |
+| GetItemName | +0x4BAB0 | +0x4C130 | +0x4C2E0 | +0xEB770 |
+| CalcItemStats | +0x5A100 | +0x5A780 | +0x5A930 | +0xF9D70 |
+| GetMaxSockets | +0x48B40 | +0x491C0 | +0x49370 | +0xE8800 |
+| InsertItemInGrid | +0x54AB0 | +0x55130 | +0x552E0 | +0xF4720 |
+| FindItemSlot | +0x54B40 | +0x551C0 | +0x55370 | +0xF47B0 |
+| RemoveItemFromGrid | +0x54BC0 | +0x55240 | +0x553F0 | +0xF4830 |
+| GetBodyEquipSlot | +0x54CC0 | +0x55340 | +0x554F0 | +0xF4930 |
+| GetLevelEntry | +0x32B60 | +0x33210 | +0x333C0 | +0xD2900 |
+| GetMonsterStats | +0x34120 | +0x347D0 | +0x34980 | +0xD3E60 |
+| LCG_NextRandom | +0x1ACA0 | +0x1B1A0 | +0x1B1A0 | +0xBAE40 |
+| CheckLOS | +0x77B40 | +0x78540 | +0x78B40 | +0x117580 |
+| GetDistanceSq | +0x62AC0 | +0x631C0 | +0x63DD0 | +0xFD210 |
+| GetDistance | +0x62A80 | +0x63180 | +0x63D90 | +0xFD1D0 |
+| IsUnitInRange | +0x62B50 | +0x63250 | +0x63E60 | +0xFD2A0 |
+| GetTreasureClass | +0x4D8A0 | +0x4DF20 | +0x4E0D0 | +0xED5B0 |
+| ResolveTreasureClass | +0x4D940 | +0x4DFC0 | +0x4E170 | +0xED650 |
+| GetAffixPool | +0x51BC0 | +0x52240 | +0x523F0 | +0xF17D0 |
+| RollMagicAffixes | +0x51C70 | +0x522F0 | +0x524A0 | +0xF1880 |
+| RollRareAffixes | +0x51D80 | +0x52400 | +0x525B0 | +0xF1990 |
+| CalcEffectiveMF | +0x4DC30 | +0x4E2B0 | +0x4E460 | +0xED940 |
+| DetermineQuality | +0x4DC90 | +0x4E310 | +0x4E4C0 | +0xED9A0 |
+| GetExpForLevel | +0x83190 | +0x84DB0 | +0x84EB0 | +0x124890 |
+| GetUnitLevel | +0x5D4A0 | +0x62D00 | +0x63970 | +0xFD7A0 |
+| SetUnitMode | +0x4EE90 | +0x4F510 | +0x4F6C0 | +0xEEEA0 |
+| GetUnitRoom | +0x625C0 | +0x62CC0 | +0x638D0 | +0xFD110 |
 
 ---
 
-## Defense and Damage Reduction
+## D2Game.dll
 
-### Physical Damage Reduction
-
-```
-Damage Reduction % (DR%):
-  Sources: item affixes, bone armor (Necro), cyclone armor (Druid), shout (Barb)
-  Cap:     50% in v1.10+ (patch to fix damage reduction exploits)
-
-Flat DR (absorb):
-  Applied AFTER DR%
-  net = max(0, (dmg × (100 - DR%) / 100) - flat_DR)
-```
-
-### Magic Damage Reduction (MDR)
-
-```
-Applies to magic damage only (not elemental, not physical)
-No percentage form — only flat MDR from items
-Item MDR cap: no cap, but items have maximum rolls
-```
-
-### Elemental Absorb
-
-```
-Applied in this order:
-  1. Resistance reduces damage: E_after_res = E × (100 - res%) / 100
-  2. Flat absorb heals: heal = min(flat_absorb, E_after_res)
-     hp = min(maxhp, hp + heal)
-     E_after_res -= heal
-  3. Percent absorb heals: heal = E_after_res × absorb% / 100
-     hp = min(maxhp, hp + heal)
-     E_after_res -= heal
-  Final damage = max(0, E_after_res)
-```
-
----
-
-## Attack Speed and Frame Rate
-
-### Character Speed Formula
-
-```
-Frames per attack = ceil(256 / (IAS_product × base_weapon_speed))
-
-Where IAS_product combines all IAS sources using the "breakpoint" table.
-Each character class has a different frame rate table.
-
-IAS soft cap: diminishing returns beyond ~75 IAS (class-dependent).
-```
-
-### Faster Hit Recovery (FHR) Breakpoints (Sorceress example)
-
-| FHR% | Frames to recover |
-|---|---|
-| 0 | 15 |
-| 5 | 14 |
-| 9 | 13 |
-| 14 | 12 |
-| 20 | 11 |
-| 30 | 10 |
-| 42 | 9 |
-| 60 | 8 |
-| 86 | 7 |
-| 142 | 6 |
-| 280 | 5 |
-
-### Faster Cast Rate (FCR) Breakpoints (Sorceress Lightning)
-
-| FCR% | Cast frames |
-|---|---|
-| 0 | 19 |
-| 9 | 18 |
-| 20 | 17 |
-| 37 | 16 |
-| 63 | 15 |
-| 105 | 14 |
-| 200 | 13 |
+| Function | v1.09d | v1.12a | v1.13c | v1.14d |
+|---|---|---|---|---|
+| GameRand | +0x18310 | +0x1A120 | +0x1A120 | +0xB9B60 |
+| SeedRand | +0x18300 | +0x1A110 | +0x1A110 | +0xB9B50 |
+| MonsterAI_Tick | +0x82180 | +0x848A0 | +0x849A0 | +0x124380 |
+| FindNearestHostile | +0x82BC0 | +0x84170 | +0x84270 | +0x123C10 |
+| CreateMissile | +0x78920 | +0x7A3B0 | +0x7A3C0 | +0x119E00 |
+| SpawnMonster | +0x7D240 | +0x7ED90 | +0x7EE90 | +0x11E880 |
+| KillUnit | +0x82910 | +0x844C0 | +0x845C0 | +0x123FA0 |
+| UseSkill | +0x6B440 | +0x6CF90 | +0x6D090 | +0x10CAD0 |
+| StartAttack | +0x6ADA0 | +0x6C8F0 | +0x6C9F0 | +0x10C430 |
+| ResolveAttack | +0x58E90 | +0x5A3A0 | +0x5A3B0 | +0xF9E70 |
+| CalcDamage | +0x59F90 | +0x5B1A0 | +0x5B210 | +0xFAC50 |
+| PathFind | +0x2A5A0 | +0x2B8A0 | +0x2B8A0 | +0xCB2E0 |
+| CheckMissileCollide | +0x6BE50 | +0x6D2E0 | +0x6D2F0 | +0x10CD30 |
+| RegisterEvent | +0x29390 | +0x2A480 | +0x2A480 | +0xC9EC0 |
+| TriggerEvent | +0x292A0 | +0x2A390 | +0x2A390 | +0xC9DD0 |
+| ProcessClientPacket | +0xF7A0 | +0x10290 | +0x102A0 | +0xA9CE0 |
+| AuraPulse | +0x6D760 | +0x6E7F0 | +0x6E800 | +0x10E240 |
+| AreaEffect | +0x6C120 | +0x6DB60 | +0x6DC60 | +0x10D6A0 |
+| SpawnObject | +0x43B80 | +0x44C10 | +0x44D10 | +0xE47F0 |
+| DropItem | +0x5D820 | +0x5F390 | +0x5F3A0 | +0xFEDE0 |
+| GenerateItem | +0x8AB40 | +0x8C6D0 | +0x8C7D0 | +0x1316B0 |
+| PopulateMonsters | +0x913A0 | +0x92FC0 | +0x930C0 | +0x132AA0 |
+| TeleportUnit | +0x2BA60 | +0x2CD90 | +0x2CD90 | +0xCC7D0 |
+| RevealRoom | +0x45C80 | +0x46D10 | +0x46E10 | +0xE67F0 |
+| UpdateExperience | +0x83210 | +0x84E30 | +0x84F30 | +0x124910 |
+| BossSpawnPack | +0x90A30 | +0x926B0 | +0x927B0 | +0x132190 |
+| AddAuraToUnit | +0x6B970 | +0x6D4C0 | +0x6D5C0 | +0x10D000 |
+| RemoveAura | +0x6BA20 | +0x6D570 | +0x6D670 | +0x10D0B0 |
+| CheckProcs | +0x6EF00 | +0x6F800 | +0x6F900 | +0x10F340 |
+| OpenDoor | +0x44A80 | +0x45B10 | +0x45C10 | +0xE55F0 |
+| ActivateShrine | +0x43E50 | +0x44EE0 | +0x44FE0 | +0xE4AC0 |
+| UseTownPortal | +0x4C8A0 | +0x4D950 | +0x4DAA0 | +0xED490 |
+| WaypointActivate | +0x4CB30 | +0x4DBE0 | +0x4DD30 | +0xED720 |
+| UpdateCurse | +0x6FF40 | +0x70850 | +0x70960 | +0x1103A0 |
+| IsHostile | +0x844D0 | +0x85FE0 | +0x860E0 | +0x125AC0 |
 
 ---
 
-## Life and Mana Calculations
+## D2Client.dll
 
-### Displayed Life/Mana
-
-```
-displayed_HP = STAT_HITPOINTS / 256    (stat is stored fixed-point ×256)
-displayed_MP = STAT_MANA / 256
-displayed_ST = STAT_STAMINA / 256
-```
-
-### Life Per Level / Life from Vitality
-
-```
-Life from Vitality:
-  Amazon:      3 life per vitality
-  Necromancer: 2 life per vitality
-  Barbarian:   4 life per vitality
-  Sorceress:   2 life per vitality
-  Paladin:     3 life per vitality
-  Druid:       2.5 life per vitality (stored as 5/2 per 2 vit)
-  Assassin:    3 life per vitality
-
-Life per Level (from class data tables):
-  Amazon: 2, Necro: 1.5, Barb: 2, Sorc: 1, Pala: 2, Druid: 1.5, Asn: 1.5
-```
-
----
-
-## Experience
-
-### XP from Kill
-
-```
-base_xp = monster.experience[difficulty]   (from monstats.txt)
-
-Group bonus (multiple killers in party):
-  1 killer: base_xp × 1.0
-  2 killers: base_xp × 1.0 (no penalty in v1.10+)
-  3 killers: base_xp × 0.9
-  4 killers: base_xp × 0.825
-  5–8 killers: base_xp × (0.825 - (n-4)×0.05)  (diminishing)
-
-Level difference penalty:
-  If |pLvl - mLvl| > 10:
-    penalty = (|diff| - 10) × 5%  per level beyond 10
-    xp = base_xp × max(5%, 100% - penalty)
-```
-
-### XP Loss on Death
-
-```
-PvM death:
-  Normal:     0% XP loss
-  Nightmare:  5% XP loss (of XP earned in current level)
-  Hell:       10% XP loss
-
-PvP death:
-  No XP loss regardless of difficulty
-
-Hardcore: no XP loss (character dies permanently instead)
-```
+| Function | v1.09d | v1.12a | v1.13c | v1.14d |
+|---|---|---|---|---|
+| GetLocalPlayer | +0x11880 | +0x11C2E0 | +0x11C3D0 | (direct ptr 0x1A6A38) |
+| PrintGameString | +0x9B1E0 | +0x9CA70 | +0x9CB60 | +0x13C550 |
+| PrintPartyString | +0x9A1A0 | +0x9BA30 | +0x9BB20 | +0x13B510 |
+| SendPacket | +0x1970 | +0x1980 | +0x1990 | +0xA0FD0 |
+| ProcessSrvPacket | +0x9E800 | +0x9F190 | +0x9F200 | +0x13EC40 |
+| DrawAutomap | +0x2A9E0 | +0x2B070 | +0x2B170 | +0xCABB0 |
+| SetViewPosition | +0x31A70 | +0x32100 | +0x32200 | +0xD1BE0 |
+| GetUIVar | +0x1A7D0 | +0x1AE60 | +0x1AF50 | +0xBA940 |
+| SetUIVar | +0x1A7F0 | +0x1AE80 | +0x1AF70 | +0xBA960 |
+| DrawInventory | +0x54AA0 | +0x55130 | +0x55220 | +0xF4C60 |
+| OpenPanel | +0x18E80 | +0x19510 | +0x19600 | +0xB9000 |
+| ClosePanel | +0x18EC0 | +0x19550 | +0x19640 | +0xB9040 |
+| DrawUnit | +0x6A8B0 | +0x6BA50 | +0x6BB40 | +0x105B80 |
+| UpdateCamera | +0x31780 | +0x31E10 | +0x31F00 | +0xD18F0 |
+| ShowOverheadMsg | +0x84C60 | +0x85EF0 | +0x85FE0 | +0x1259C0 |
+| SetCursorItem | +0x54010 | +0x54690 | +0x54780 | +0xF41C0 |
+| RequestJoinGame | +0x62810 | +0x634A0 | +0x635A0 | +0x102E40 |
+| HandleChatInput | +0x98A40 | +0x9A2D0 | +0x9A3C0 | +0x139DB0 |
+| DrawGroundItem | +0x6C2B0 | +0x6D430 | +0x6D520 | +0x107660 |
+| SetItemTooltip | +0x5A3C0 | +0x5AA50 | +0x5AB40 | +0xFA480 |
+| RenderFrame | +0x7E490 | +0x7F610 | +0x7F700 | +0x11F0E0 |
 
 ---
 
-## Skill Damage Formulas
+## D2Net.dll
 
-### Fireball (Sorceress)
-
-```
-min_fire = 8 × slvl + (base_min)
-max_fire = 8 × slvl + (base_max)
-synergy bonus from Inferno: +2% fire damage per level
-synergy bonus from Firebolt: +4% fire damage per level
-synergy bonus from Meteor:   +4% fire damage per level
-```
-
-### Frozen Orb (Sorceress)
-
-```
-min_cold = 20 + 2 × slvl
-max_cold = 30 + 3 × slvl
-freeze duration = (50 + 10 × slvl) × difficulty_modifier / 25  frames
-(difficulty_modifier: Normal=1.0, NM=0.5, Hell=0.25)
-```
-
-### Zeal (Paladin)
-
-```
-attacks per cast = min(2 + slvl, 5)   (caps at 5 hits at level 3)
-enhanced damage = 20 × slvl %
-synergy from Sacrifice: +5% ED per level
-The attack speed of each Zeal hit follows the standard melee formula.
-```
-
-### Whirlwind (Barbarian)
-
-```
-WW hits per frame depends on weapon speed:
-  Step size = 15 (sub-tiles) per tick while spinning
-  Hit frequency = every (weapon_frame_rate / 2) frames
-  Minimum 4 hits total regardless of weapon speed
-WW cannot be used with 2H bows/xbows.
-```
+| Function | v1.09d | v1.12a | v1.13c | v1.14d |
+|---|---|---|---|---|
+| SendPacket | +0x6C90 | +0x70A0 | +0x70A0 | (inlined) |
+| RecvPacket | +0x6CB0 | +0x70C0 | +0x70C0 | (inlined) |
+| OpenSocket | +0x3B40 | +0x3E50 | +0x3E50 | (inlined) |
+| CloseSocket | +0x3B60 | +0x3E70 | +0x3E70 | (inlined) |
+| FlushSendQueue | +0x7120 | +0x7430 | +0x7430 | (inlined) |
 
 ---
 
-## Conviction Aura Mechanics
+## Fog.dll
 
-```
-Conviction reduces monster resistances below their natural floor.
-For a monster immune to fire (e.g., 110% resist):
-  effective_resist = 110 - (Conviction_reduction / 5)
-  If result < 100, immunity is broken.
-  Example: slvl 20 Conviction (-150%): 110 - 30 = 80% → fire hits at 20% damage
+| Function | v1.09d | v1.12a | v1.13c | v1.14d |
+|---|---|---|---|---|
+| AllocPool | +0x10A80 | +0x10B40 | +0x10B40 | +0xAA580 |
+| FreePool | +0x10AA0 | +0x10B60 | +0x10B60 | +0xAA5A0 |
+| MPQOpenFile | +0xA1B0 | +0xA4C0 | +0xA4C0 | +0xA9F00 |
+| MPQReadFile | +0xA1D0 | +0xA4E0 | +0xA4E0 | +0xA9F20 |
+| MPQCloseFile | +0xA1F0 | +0xA500 | +0xA500 | +0xA9F40 |
+| LogError | +0xB2A0 | +0xB5B0 | +0xB5B0 | +0xAB050 |
+| AssertFail | +0xB340 | +0xB650 | +0xB650 | +0xAB0F0 |
 
-Party members do NOT benefit from breaking immunities — only the Paladin.
-Conviction stacks multiplicatively with Lower Resist (Necro curse).
-```
+---
+
+## D2Lang.dll
+
+| Function | v1.09d | v1.12a | v1.13c | v1.14d |
+|---|---|---|---|---|
+| GetStringById | +0x10B0 | +0x10B0 | +0x10B0 | +0xA0B00 |
+| GetStringByIndex | +0x10D0 | +0x10D0 | +0x10D0 | +0xA0B20 |
+| LoadStringTable | +0x1A40 | +0x1A40 | +0x1A40 | +0xA1480 |
+| GetStringCount | +0x1060 | +0x1060 | +0x1060 | +0xA0AB0 |
+| GetLocalizedStr | +0x1100 | +0x1100 | +0x1100 | +0xA0B50 |
+
+---
+
+## D2Win.dll
+
+| Function | v1.09d | v1.12a | v1.13c | v1.14d |
+|---|---|---|---|---|
+| DrawText | +0xED70 | +0xF080 | +0xF0A0 | +0xAEA40 |
+| DrawBox | +0xE9A0 | +0xECB0 | +0xECD0 | +0xAE670 |
+| DrawLine | +0xEA10 | +0xED20 | +0xED40 | +0xAE6E0 |
+| SetFont | +0xEE40 | +0xF150 | +0xF170 | +0xAEB10 |
+| GetTextWidth | +0xEEB0 | +0xF1C0 | +0xF1E0 | +0xAEB80 |
+| GetScreenRes | +0x8A90 | +0x8DA0 | +0x8DC0 | +0xA8760 |
+| RegisterHotkey | +0x72C0 | +0x75D0 | +0x75F0 | +0xA6F90 |
+| IsKeyDown | +0x7210 | +0x7520 | +0x7540 | +0xA6EE0 |
+| CreateButton | +0x9B40 | +0x9E50 | +0x9E70 | +0xA9810 |
+| CreateEditBox | +0x9F20 | +0xA230 | +0xA250 | +0xA9BF0 |
+
+---
+
+## Global Pointers (D2Client.dll unless noted)
+
+| Symbol | v1.09d | v1.12a | v1.13c | v1.14d (exe) |
+|---|---|---|---|---|
+| gpPlayerUnit | +0x11B060 | +0x11C2E0 | +0x11C3D0 | 0x6FBF2C |
+| gpGameData | +0x102540 | +0x103DB0 | +0x103EA0 | 0x6FB384 |
+| gdwScreenWidth | +0x1150A0 | +0x116120 | +0x116210 | 0x6FF498 |
+| gdwScreenHeight | +0x1150A4 | +0x116124 | +0x116214 | 0x6FF49C |
+| gdwMouseX | +0x101614 | +0x102E84 | +0x102F74 | 0x6FB274 |
+| gdwMouseY | +0x101618 | +0x102E88 | +0x102F78 | 0x6FB278 |
+| gdwGameTick | +0x102910 | +0x104180 | +0x104270 | 0x6FB570 |
+| gbInGame | +0x11B3C4 | +0x11C644 | +0x11C734 | 0x6FBF94 |
+| gUnitHashTable | +0x10A608 | +0x11B888 | +0x11B9D0 | 0x6FB6D0 |
+| gUIVars (D2Client) | +0x11B320 | +0x11C5A0 | +0x11C690 | 0x6FBF50 |
+| gPaletteId (D2Gfx) | +0x11300 | +0x11300 | +0x11300 | 0x6CAB20 |
+| gRandSeed (D2Game) | +0x129BE0 | +0x13ABE0 | +0x13ABE0 | 0x13B010 |
