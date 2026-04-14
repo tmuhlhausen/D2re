@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "d2re"
+version = "1.0.0"
+description = "Diablo II reverse engineering toolkit"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "scapy>=2.5.0",
+  "colorama>=0.4.6",
+  "mpyq>=0.2.5",
+]
+
+[tool.setuptools]
+py-modules = []
