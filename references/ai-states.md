@@ -1,191 +1,190 @@
-# D2 Function Offsets — All Major Versions (v1.09d / v1.12a / v1.13c / v1.14d)
-# All offsets relative to module base.
-# v1.14d: ALL offsets relative to Diablo II.exe (single merged exe).
-# Verified from community IDA databases, PhrozenKeep, and D2LOD-IDA project.
+# D2 Monster AI States Reference
 
 ---
 
-## D2Common.dll
+## AI Architecture
 
-| Function | v1.09d | v1.12a | v1.13c | v1.14d |
-|---|---|---|---|---|
-| GetUnitStat | +0x5D4C0 | +0x62D20 | +0x63990 | +0xFD7C0 |
-| SetUnitStat | +0x5D490 | +0x62CF0 | +0x63960 | +0xFD790 |
-| AddUnitStat | +0x5D530 | +0x62D90 | +0x63A00 | +0xFD840 |
-| SubtractUnitStat | +0x5D560 | +0x62DC0 | +0x63A30 | +0xFD870 |
-| GetItemStat | +0x5D5A0 | +0x62E00 | +0x63A70 | +0xFD8B0 |
-| GetSkillLevel | +0x5D620 | +0x62E80 | +0x63AF0 | +0xFD930 |
-| GetSkillInfo | +0x5D660 | +0x62EC0 | +0x63B30 | +0xFD970 |
-| GetUnitFromId | +0x4F210 | +0x4F890 | +0x4FA40 | +0xEF220 |
-| AllocUnit | +0x4EF90 | +0x4F610 | +0x4F7C0 | +0xEEFA0 |
-| FreeUnit | +0x4EFD0 | +0x4F650 | +0x4F800 | +0xEEFE0 |
-| GetItemCode | +0x4BA20 | +0x4C0A0 | +0x4C250 | +0xEB6E0 |
-| GetItemName | +0x4BAB0 | +0x4C130 | +0x4C2E0 | +0xEB770 |
-| CalcItemStats | +0x5A100 | +0x5A780 | +0x5A930 | +0xF9D70 |
-| GetMaxSockets | +0x48B40 | +0x491C0 | +0x49370 | +0xE8800 |
-| InsertItemInGrid | +0x54AB0 | +0x55130 | +0x552E0 | +0xF4720 |
-| FindItemSlot | +0x54B40 | +0x551C0 | +0x55370 | +0xF47B0 |
-| RemoveItemFromGrid | +0x54BC0 | +0x55240 | +0x553F0 | +0xF4830 |
-| GetBodyEquipSlot | +0x54CC0 | +0x55340 | +0x554F0 | +0xF4930 |
-| GetLevelEntry | +0x32B60 | +0x33210 | +0x333C0 | +0xD2900 |
-| GetMonsterStats | +0x34120 | +0x347D0 | +0x34980 | +0xD3E60 |
-| LCG_NextRandom | +0x1ACA0 | +0x1B1A0 | +0x1B1A0 | +0xBAE40 |
-| CheckLOS | +0x77B40 | +0x78540 | +0x78B40 | +0x117580 |
-| GetDistanceSq | +0x62AC0 | +0x631C0 | +0x63DD0 | +0xFD210 |
-| GetDistance | +0x62A80 | +0x63180 | +0x63D90 | +0xFD1D0 |
-| IsUnitInRange | +0x62B50 | +0x63250 | +0x63E60 | +0xFD2A0 |
-| GetTreasureClass | +0x4D8A0 | +0x4DF20 | +0x4E0D0 | +0xED5B0 |
-| ResolveTreasureClass | +0x4D940 | +0x4DFC0 | +0x4E170 | +0xED650 |
-| GetAffixPool | +0x51BC0 | +0x52240 | +0x523F0 | +0xF17D0 |
-| RollMagicAffixes | +0x51C70 | +0x522F0 | +0x524A0 | +0xF1880 |
-| RollRareAffixes | +0x51D80 | +0x52400 | +0x525B0 | +0xF1990 |
-| CalcEffectiveMF | +0x4DC30 | +0x4E2B0 | +0x4E460 | +0xED940 |
-| DetermineQuality | +0x4DC90 | +0x4E310 | +0x4E4C0 | +0xED9A0 |
-| GetExpForLevel | +0x83190 | +0x84DB0 | +0x84EB0 | +0x124890 |
-| GetUnitLevel | +0x5D4A0 | +0x62D00 | +0x63970 | +0xFD7A0 |
-| SetUnitMode | +0x4EE90 | +0x4F510 | +0x4F6C0 | +0xEEEA0 |
-| GetUnitRoom | +0x625C0 | +0x62CC0 | +0x638D0 | +0xFD110 |
+Each monster row in `monstats.txt` has an `Ai` column referencing one of 300
+named AI behaviors. These map to function pointers in `D2Game.dll`.
+The server runs at 25 Hz; each monster gets one AI tick per frame.
+
+### AI Execution Order Each Tick
+
+```
+1. Check if monster is alive (not MM_DEAD or MM_DEATH)
+2. Check if monster is in a loaded room (player nearby)
+3. Update animation frame counter
+4. Run AI function: g_AITable[aiCode](pMon, 0, &aiParam)
+5. Process queued events (EVENT_GETHIT, EVENT_ATTACKED, etc.)
+6. Update position along Path if PATHFLAG_MOVING
+7. Check room transition
+```
 
 ---
 
-## D2Game.dll
+## Named AI Behaviors (Key Entries)
 
-| Function | v1.09d | v1.12a | v1.13c | v1.14d |
-|---|---|---|---|---|
-| GameRand | +0x18310 | +0x1A120 | +0x1A120 | +0xB9B60 |
-| SeedRand | +0x18300 | +0x1A110 | +0x1A110 | +0xB9B50 |
-| MonsterAI_Tick | +0x82180 | +0x848A0 | +0x849A0 | +0x124380 |
-| FindNearestHostile | +0x82BC0 | +0x84170 | +0x84270 | +0x123C10 |
-| CreateMissile | +0x78920 | +0x7A3B0 | +0x7A3C0 | +0x119E00 |
-| SpawnMonster | +0x7D240 | +0x7ED90 | +0x7EE90 | +0x11E880 |
-| KillUnit | +0x82910 | +0x844C0 | +0x845C0 | +0x123FA0 |
-| UseSkill | +0x6B440 | +0x6CF90 | +0x6D090 | +0x10CAD0 |
-| StartAttack | +0x6ADA0 | +0x6C8F0 | +0x6C9F0 | +0x10C430 |
-| ResolveAttack | +0x58E90 | +0x5A3A0 | +0x5A3B0 | +0xF9E70 |
-| CalcDamage | +0x59F90 | +0x5B1A0 | +0x5B210 | +0xFAC50 |
-| PathFind | +0x2A5A0 | +0x2B8A0 | +0x2B8A0 | +0xCB2E0 |
-| CheckMissileCollide | +0x6BE50 | +0x6D2E0 | +0x6D2F0 | +0x10CD30 |
-| RegisterEvent | +0x29390 | +0x2A480 | +0x2A480 | +0xC9EC0 |
-| TriggerEvent | +0x292A0 | +0x2A390 | +0x2A390 | +0xC9DD0 |
-| ProcessClientPacket | +0xF7A0 | +0x10290 | +0x102A0 | +0xA9CE0 |
-| AuraPulse | +0x6D760 | +0x6E7F0 | +0x6E800 | +0x10E240 |
-| AreaEffect | +0x6C120 | +0x6DB60 | +0x6DC60 | +0x10D6A0 |
-| SpawnObject | +0x43B80 | +0x44C10 | +0x44D10 | +0xE47F0 |
-| DropItem | +0x5D820 | +0x5F390 | +0x5F3A0 | +0xFEDE0 |
-| GenerateItem | +0x8AB40 | +0x8C6D0 | +0x8C7D0 | +0x1316B0 |
-| PopulateMonsters | +0x913A0 | +0x92FC0 | +0x930C0 | +0x132AA0 |
-| TeleportUnit | +0x2BA60 | +0x2CD90 | +0x2CD90 | +0xCC7D0 |
-| RevealRoom | +0x45C80 | +0x46D10 | +0x46E10 | +0xE67F0 |
-| UpdateExperience | +0x83210 | +0x84E30 | +0x84F30 | +0x124910 |
-| BossSpawnPack | +0x90A30 | +0x926B0 | +0x927B0 | +0x132190 |
-| AddAuraToUnit | +0x6B970 | +0x6D4C0 | +0x6D5C0 | +0x10D000 |
-| RemoveAura | +0x6BA20 | +0x6D570 | +0x6D670 | +0x10D0B0 |
-| CheckProcs | +0x6EF00 | +0x6F800 | +0x6F900 | +0x10F340 |
-| OpenDoor | +0x44A80 | +0x45B10 | +0x45C10 | +0xE55F0 |
-| ActivateShrine | +0x43E50 | +0x44EE0 | +0x44FE0 | +0xE4AC0 |
-| UseTownPortal | +0x4C8A0 | +0x4D950 | +0x4DAA0 | +0xED490 |
-| WaypointActivate | +0x4CB30 | +0x4DBE0 | +0x4DD30 | +0xED720 |
-| UpdateCurse | +0x6FF40 | +0x70850 | +0x70960 | +0x1103A0 |
-| IsHostile | +0x844D0 | +0x85FE0 | +0x860E0 | +0x125AC0 |
+| aiCode | Name (monstats.txt) | Behavior | Example Monsters |
+|---|---|---|---|
+| 0 | `zombie` | Shamble toward player, melee attack | Zombies, Fallen |
+| 1 | `tempest` | Melee + knockback | Carver |
+| 2 | `npc` | Stand, talk when interacted with | Akara, Gheed |
+| 3 | `idle` | Stationary, no AI | Town pets |
+| 4 | `ranged` | Maintain distance, shoot projectiles | Fallen Shaman |
+| 5 | `skeleton` | Walk/attack, flee if low HP | Skeletons |
+| 6 | `mummy` | Raise fallen, melee | Greater Mummy |
+| 7 | `scarab` | Aggressive charge, high speed | Dung Soldiers |
+| 8 | `sandraider` | Ambush from off-screen | Sand Raiders |
+| 9 | `suicideminion` | Run into player, explode | Suicide Minions (Duriel area) |
+| 10 | `desert_mercenary` | Follow owner, assist attacks | Act 2 Mercenaries |
+| 11 | `mummy_generator` | Spawn minions at interval | Mummy Sarcophagus |
+| 12 | `vipers` | Poison spit + melee | Sand Leapers |
+| 13 | `coldplains_zombie` | Slow zombie walk | Cold Plains zombies |
+| 14 | `bloodraven` | Fly, summon undead | Blood Raven (boss) |
+| 20 | `andariel` | Boss AI: phase-based poison spray + melee | Andariel |
+| 21 | `duriel` | Boss: charge + Holy Freeze aura | Duriel |
+| 24 | `radament` | Teleport + curse + skeletons | Radament (boss) |
+| 30 | `mephisto` | Teleport, chain lightning, blizzard, bone spear | Mephisto |
+| 31 | `diablo` | Fire nova, lightning hose, fire breath | Diablo |
+| 32 | `baal` | Phase-based: tentacles, vortex, decoys | Baal |
+| 40 | `fallen_rogue` | Stand and shoot, flee if player comes close | Fallen Shaman |
+| 41 | `overlord` | Command buff: raises speed of nearby fallen | Carver Shaman |
+| 50 | `summoner` | Teleport, cast spells at range | The Summoner |
+| 55 | `council` | Phase: lightning, hydra, meteor | Council Members |
+| 60 | `izual` | Melee, frost nova, inferno | Izual |
+| 70 | `nihlathak` | Corpse Explosion spam, teleport | Nihlathak |
+| 80 | `ancients` | Coordinated trio combat | Ancients |
 
 ---
 
-## D2Client.dll
+## Standard Melee AI (ai=0 "zombie") — Reconstructed
 
-| Function | v1.09d | v1.12a | v1.13c | v1.14d |
-|---|---|---|---|---|
-| GetLocalPlayer | +0x11880 | +0x11C2E0 | +0x11C3D0 | (direct ptr 0x1A6A38) |
-| PrintGameString | +0x9B1E0 | +0x9CA70 | +0x9CB60 | +0x13C550 |
-| PrintPartyString | +0x9A1A0 | +0x9BA30 | +0x9BB20 | +0x13B510 |
-| SendPacket | +0x1970 | +0x1980 | +0x1990 | +0xA0FD0 |
-| ProcessSrvPacket | +0x9E800 | +0x9F190 | +0x9F200 | +0x13EC40 |
-| DrawAutomap | +0x2A9E0 | +0x2B070 | +0x2B170 | +0xCABB0 |
-| SetViewPosition | +0x31A70 | +0x32100 | +0x32200 | +0xD1BE0 |
-| GetUIVar | +0x1A7D0 | +0x1AE60 | +0x1AF50 | +0xBA940 |
-| SetUIVar | +0x1A7F0 | +0x1AE80 | +0x1AF70 | +0xBA960 |
-| DrawInventory | +0x54AA0 | +0x55130 | +0x55220 | +0xF4C60 |
-| OpenPanel | +0x18E80 | +0x19510 | +0x19600 | +0xB9000 |
-| ClosePanel | +0x18EC0 | +0x19550 | +0x19640 | +0xB9040 |
-| DrawUnit | +0x6A8B0 | +0x6BA50 | +0x6BB40 | +0x105B80 |
-| UpdateCamera | +0x31780 | +0x31E10 | +0x31F00 | +0xD18F0 |
-| ShowOverheadMsg | +0x84C60 | +0x85EF0 | +0x85FE0 | +0x1259C0 |
-| SetCursorItem | +0x54010 | +0x54690 | +0x54780 | +0xF41C0 |
-| RequestJoinGame | +0x62810 | +0x634A0 | +0x635A0 | +0x102E40 |
-| HandleChatInput | +0x98A40 | +0x9A2D0 | +0x9A3C0 | +0x139DB0 |
-| DrawGroundItem | +0x6C2B0 | +0x6D430 | +0x6D520 | +0x107660 |
-| SetItemTooltip | +0x5A3C0 | +0x5AA50 | +0x5AB40 | +0xFA480 |
-| RenderFrame | +0x7E490 | +0x7F610 | +0x7F700 | +0x11F0E0 |
+This is the most common AI pattern. Understanding it helps reverse all variants.
 
----
+```c
+/* D2Game.dll — "zombie" AI function (reconstructed from v1.13c) */
+void __fastcall AI_Zombie(UnitAny* pMon, int _edx, AIParam* pParam) {
+    /* If in hit-stun: wait for animation to finish */
+    if (pMon->dwMode == MM_GETHIT) return;
+    if (pMon->dwMode == MM_DEATH || pMon->dwMode == MM_DEAD) return;
 
-## D2Net.dll
+    /* Find nearest hostile unit */
+    UnitAny* pTarget = D2Game_FindNearestHostile(pMon, pParam->dwAggroRange);
+    if (!pTarget) {
+        /* No target: idle or random walk */
+        if (pMon->dwMode == MM_WALK || pMon->dwMode == MM_RUN)
+            return;  /* already moving, let path finish */
+        if (D2Game_Rand(100) < 5)  /* 5% chance per tick to start random walk */
+            D2Game_StartRandomWalk(pMon, pParam->dwWalkRange);
+        return;
+    }
 
-| Function | v1.09d | v1.12a | v1.13c | v1.14d |
-|---|---|---|---|---|
-| SendPacket | +0x6C90 | +0x70A0 | +0x70A0 | (inlined) |
-| RecvPacket | +0x6CB0 | +0x70C0 | +0x70C0 | (inlined) |
-| OpenSocket | +0x3B40 | +0x3E50 | +0x3E50 | (inlined) |
-| CloseSocket | +0x3B60 | +0x3E70 | +0x3E70 | (inlined) |
-| FlushSendQueue | +0x7120 | +0x7430 | +0x7430 | (inlined) |
-
----
-
-## Fog.dll
-
-| Function | v1.09d | v1.12a | v1.13c | v1.14d |
-|---|---|---|---|---|
-| AllocPool | +0x10A80 | +0x10B40 | +0x10B40 | +0xAA580 |
-| FreePool | +0x10AA0 | +0x10B60 | +0x10B60 | +0xAA5A0 |
-| MPQOpenFile | +0xA1B0 | +0xA4C0 | +0xA4C0 | +0xA9F00 |
-| MPQReadFile | +0xA1D0 | +0xA4E0 | +0xA4E0 | +0xA9F20 |
-| MPQCloseFile | +0xA1F0 | +0xA500 | +0xA500 | +0xA9F40 |
-| LogError | +0xB2A0 | +0xB5B0 | +0xB5B0 | +0xAB050 |
-| AssertFail | +0xB340 | +0xB650 | +0xB650 | +0xAB0F0 |
+    /* Target found: check if in melee range */
+    DWORD dist = D2Game_GetDistanceSq(pMon, pTarget);
+    if (dist <= pParam->dwMeleeRange * pParam->dwMeleeRange) {
+        /* In range: attack if not already attacking */
+        if (pMon->dwMode != MM_ATTACK1 && pMon->dwMode != MM_ATTACK2) {
+            D2Game_StartAttack(pMon, pTarget, 0);
+        }
+    } else {
+        /* Out of range: path toward target */
+        if (pMon->dwMode != MM_WALK && pMon->dwMode != MM_RUN) {
+            D2Game_PathFind(pMon, pTarget->pPath->wPosX,
+                                  pTarget->pPath->wPosY, PATHFLAG_MOVING);
+            pMon->dwMode = (pParam->bCanRun && dist > 16*16) ? MM_RUN : MM_WALK;
+        }
+    }
+}
+```
 
 ---
 
-## D2Lang.dll
+## Boss AI Phase Detection
 
-| Function | v1.09d | v1.12a | v1.13c | v1.14d |
-|---|---|---|---|---|
-| GetStringById | +0x10B0 | +0x10B0 | +0x10B0 | +0xA0B00 |
-| GetStringByIndex | +0x10D0 | +0x10D0 | +0x10D0 | +0xA0B20 |
-| LoadStringTable | +0x1A40 | +0x1A40 | +0x1A40 | +0xA1480 |
-| GetStringCount | +0x1060 | +0x1060 | +0x1060 | +0xA0AB0 |
-| GetLocalizedStr | +0x1100 | +0x1100 | +0x1100 | +0xA0B50 |
+Many bosses have phase transitions based on HP percentage.
 
----
+```c
+/* Generic boss phase helper */
+DWORD D2Game_GetBossPhase(UnitAny* pBoss) {
+    DWORD curHP = D2Common_GetUnitStat(pBoss, 0, STAT_HITPOINTS, 0) >> 8;
+    DWORD maxHP = D2Common_GetUnitStat(pBoss, 0, STAT_MAXHP, 0) >> 8;
+    if (maxHP == 0) return 0;
+    DWORD pct = curHP * 100 / maxHP;
+    if (pct >= 75) return 1;
+    if (pct >= 50) return 2;
+    if (pct >= 25) return 3;
+    return 4;
+}
 
-## D2Win.dll
-
-| Function | v1.09d | v1.12a | v1.13c | v1.14d |
-|---|---|---|---|---|
-| DrawText | +0xED70 | +0xF080 | +0xF0A0 | +0xAEA40 |
-| DrawBox | +0xE9A0 | +0xECB0 | +0xECD0 | +0xAE670 |
-| DrawLine | +0xEA10 | +0xED20 | +0xED40 | +0xAE6E0 |
-| SetFont | +0xEE40 | +0xF150 | +0xF170 | +0xAEB10 |
-| GetTextWidth | +0xEEB0 | +0xF1C0 | +0xF1E0 | +0xAEB80 |
-| GetScreenRes | +0x8A90 | +0x8DA0 | +0x8DC0 | +0xA8760 |
-| RegisterHotkey | +0x72C0 | +0x75D0 | +0x75F0 | +0xA6F90 |
-| IsKeyDown | +0x7210 | +0x7520 | +0x7540 | +0xA6EE0 |
-| CreateButton | +0x9B40 | +0x9E50 | +0x9E70 | +0xA9810 |
-| CreateEditBox | +0x9F20 | +0xA230 | +0xA250 | +0xA9BF0 |
+/* Diablo uses this for: */
+/*  Phase 1 (100–75%): Fire Nova + Lightning Hose */
+/*  Phase 2 (75–50%): Adds Red Lightning Hose */
+/*  Phase 3 (50–25%): Adds Fire Wall spawn */
+/*  Phase 4 (<25%):   Adds Bone Prison on player */
+```
 
 ---
 
-## Global Pointers (D2Client.dll unless noted)
+## Aggro System
 
-| Symbol | v1.09d | v1.12a | v1.13c | v1.14d (exe) |
-|---|---|---|---|---|
-| gpPlayerUnit | +0x11B060 | +0x11C2E0 | +0x11C3D0 | 0x6FBF2C |
-| gpGameData | +0x102540 | +0x103DB0 | +0x103EA0 | 0x6FB384 |
-| gdwScreenWidth | +0x1150A0 | +0x116120 | +0x116210 | 0x6FF498 |
-| gdwScreenHeight | +0x1150A4 | +0x116124 | +0x116214 | 0x6FF49C |
-| gdwMouseX | +0x101614 | +0x102E84 | +0x102F74 | 0x6FB274 |
-| gdwMouseY | +0x101618 | +0x102E88 | +0x102F78 | 0x6FB278 |
-| gdwGameTick | +0x102910 | +0x104180 | +0x104270 | 0x6FB570 |
-| gbInGame | +0x11B3C4 | +0x11C644 | +0x11C734 | 0x6FBF94 |
-| gUnitHashTable | +0x10A608 | +0x11B888 | +0x11B9D0 | 0x6FB6D0 |
-| gUIVars (D2Client) | +0x11B320 | +0x11C5A0 | +0x11C690 | 0x6FBF50 |
-| gPaletteId (D2Gfx) | +0x11300 | +0x11300 | +0x11300 | 0x6CAB20 |
-| gRandSeed (D2Game) | +0x129BE0 | +0x13ABE0 | +0x13ABE0 | 0x13B010 |
+```c
+/* D2Game.dll+0x84270 (v1.13c) — find nearest hostile in range */
+UnitAny* D2Game_FindNearestHostile(UnitAny* pMon, DWORD dwRange) {
+    UnitAny* pBest = NULL;
+    DWORD dwBestDist = dwRange * dwRange;
+
+    /* Iterate all units in current room + adjacent rooms */
+    Room1** pRooms = pMon->pPath->pRoom1->pRoomsNear;
+    for (DWORD r = 0; r < pMon->pPath->pRoom1->dwRoomsNear; r++) {
+        UnitAny* pUnit = pRooms[r]->pUnitFirst;
+        while (pUnit) {
+            if (D2Game_IsHostile(pMon, pUnit)) {
+                DWORD dist = D2Game_GetDistanceSq(pMon, pUnit);
+                if (dist < dwBestDist) {
+                    dwBestDist = dist;
+                    pBest = pUnit;
+                }
+            }
+            pUnit = pUnit->pRoomNext;
+        }
+    }
+    return pBest;
+}
+
+/* Hostility matrix */
+BOOL D2Game_IsHostile(UnitAny* pA, UnitAny* pB) {
+    /* Monsters are hostile to players and pets */
+    /* Players are hostile to monsters */
+    /* Player-vs-player hostility depends on game flags + hostile declaration */
+    if (pA->dwType == UNIT_MONSTER && pB->dwType == UNIT_PLAYER) return TRUE;
+    if (pA->dwType == UNIT_PLAYER  && pB->dwType == UNIT_MONSTER) return TRUE;
+    if (pA->dwType == UNIT_MONSTER && pB->dwType == UNIT_MONSTER)
+        return (pA->dwOwnerGuid == 0 && pB->dwOwnerGuid != 0) ||  /* wild vs pet */
+               (pA->dwOwnerGuid != 0 && pB->dwOwnerGuid == 0);    /* pet vs wild */
+    return FALSE;
+}
+```
+
+---
+
+## Flee AI
+
+Some monsters flee when health is low or when a specific event occurs
+(e.g., Fallen flee when their Shaman is killed).
+
+```c
+/* Shaman death triggers flee in all nearby Fallen */
+/* D2Game.dll — EVENT_DEATH handler for Shaman units */
+void __fastcall AI_Shaman_OnDeath(UnitAny* pShaman, int _edx, void* pData) {
+    /* Iterate units in nearby rooms */
+    Room1* pRoom = pShaman->pPath->pRoom1;
+    for each unit in room {
+        if (unit.dwType == UNIT_MONSTER &&
+            unit.pMonsterData->pMonStats->szAi == "fallen") {
+            /* Set flee flag: run away from players for 10 seconds */
+            unit.pMonsterData->bSpecialFlags |= MONFLAG_FLEEING;
+            unit.dwNextTime = GetCurrentTick() + 25 * 10;  /* 10 seconds */
+        }
+    }
+}
+```
