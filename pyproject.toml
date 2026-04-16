@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "d2re"
+version = "1.1.0"
+description = "Diablo II reverse engineering toolkit"
+readme = "README.md"
+requires-python = ">=3.8"
+dependencies = [
+  "scapy>=2.5.0",
+  "colorama>=0.4.6",
+  "mpyq>=0.2.5",
+]
+
+[project.scripts]
+d2re = "d2re.cli:main"
+d2re-parse = "d2re.cli:parse_main"
+d2re-roll = "d2re.cli:roll_main"
+d2re-extract = "d2re.cli:extract_main"
+d2re-sniff = "d2re.cli:sniff_main"
+d2re-map = "d2re.cli:map_main"
+
+[tool.setuptools.packages.find]
+include = ["d2re", "scripts", "tools"]
