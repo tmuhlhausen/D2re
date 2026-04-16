@@ -1,31 +1,36 @@
 #!/usr/bin/env python3
-"""Unified command line interface for D2RE.
-
-This wraps the repository's existing scripts behind a single installed command.
-"""
+"""Unified command line interface for D2RE."""
 
 from __future__ import annotations
 
 import argparse
 import importlib
 import sys
-from typing import Iterable, List
+from typing import Iterable, List, Tuple
 
 from . import __version__
 
-SCRIPT_MODULES = {
+SCRIPT_MODULES: dict[str, Tuple[str, str]] = {
     "parse": ("scripts.d2s_parser", "d2s_parser.py"),
     "roll": ("scripts.item_roller", "item_roller.py"),
     "extract": ("scripts.mpq_extract", "mpq_extract.py"),
     "sniff": ("scripts.packet_sniffer", "packet_sniffer.py"),
     "map": ("scripts.map_seed_tool", "map_seed_tool.py"),
+    "tc": ("scripts.tc_explorer", "tc_explorer.py"),
+    "drops": ("scripts.drop_calculator", "drop_calculator.py"),
+    "doctor": ("d2re.doctor", "d2re-doctor"),
+    "gui": ("d2re.gui", "d2re-gui"),
 }
 
 
 def _dispatch(module_name: str, argv: List[str], prog_name: str) -> int:
     old_argv = sys.argv[:]
+    forwarded = list(argv)
+    if forwarded and forwarded[0] == "--":
+        forwarded = forwarded[1:]
+
     try:
-        sys.argv = [prog_name, *argv]
+        sys.argv = [prog_name, *forwarded]
         module = importlib.import_module(module_name)
         if not hasattr(module, "main"):
             raise SystemExit(f"{module_name} does not expose a main() entry point")
@@ -39,7 +44,11 @@ def _dispatch(module_name: str, argv: List[str], prog_name: str) -> int:
         sys.argv = old_argv
 
 
-def _add_passthrough_parser(subparsers: argparse._SubParsersAction, name: str, help_text: str) -> None:
+def _add_passthrough_parser(
+    subparsers: argparse._SubParsersAction,
+    name: str,
+    help_text: str,
+) -> None:
     parser = subparsers.add_parser(
         name,
         help=help_text,
@@ -48,7 +57,7 @@ def _add_passthrough_parser(subparsers: argparse._SubParsersAction, name: str, h
     parser.add_argument(
         "args",
         nargs=argparse.REMAINDER,
-        help="Arguments forwarded to the underlying script.",
+        help="Arguments forwarded to the underlying module.",
     )
 
 
@@ -61,18 +70,25 @@ def build_parser() -> argparse.ArgumentParser:
             "  d2re parse MyChar.d2s --json\n"
             "  d2re roll --seed 0xDEADBEEF --ilvl 85 --mf 300\n"
             "  d2re extract --all-mpqs 'C:/Diablo II/' --table weapons --csv\n"
-            "  d2re sniff --demo --verbose\n"
-            "  d2re map --d2s MyChar.d2s --level 15 --ascii"
+            "  d2re tc --tc 'Act 5 Super C' --resolve --top 25\n"
+            "  d2re drops --tc 'Mephisto (N)' --item weap87 --runs 250000\n"
+            "  d2re doctor\n"
+            "  d2re gui"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", action="version", version=f"d2re {__version__}")
+
     subparsers = parser.add_subparsers(dest="command")
     _add_passthrough_parser(subparsers, "parse", "Run the .d2s save parser.")
     _add_passthrough_parser(subparsers, "roll", "Run the item generation simulator.")
     _add_passthrough_parser(subparsers, "extract", "Run the MPQ / CASC extractor.")
     _add_passthrough_parser(subparsers, "sniff", "Run the packet sniffer.")
     _add_passthrough_parser(subparsers, "map", "Run the map seed analysis tool.")
+    _add_passthrough_parser(subparsers, "tc", "Explore treasure class trees.")
+    _add_passthrough_parser(subparsers, "drops", "Run the Monte Carlo drop calculator.")
+    _add_passthrough_parser(subparsers, "doctor", "Run repository and environment self-checks.")
+    _add_passthrough_parser(subparsers, "gui", "Launch the desktop GUI manager.")
     return parser
 
 
@@ -107,3 +123,19 @@ def sniff_main() -> int:
 
 def map_main() -> int:
     return _dispatch("scripts.map_seed_tool", sys.argv[1:], "map_seed_tool.py")
+
+
+def tc_main() -> int:
+    return _dispatch("scripts.tc_explorer", sys.argv[1:], "tc_explorer.py")
+
+
+def drops_main() -> int:
+    return _dispatch("scripts.drop_calculator", sys.argv[1:], "drop_calculator.py")
+
+
+def doctor_main() -> int:
+    return _dispatch("d2re.doctor", sys.argv[1:], "d2re-doctor")
+
+
+def gui_main() -> int:
+    return _dispatch("d2re.gui", sys.argv[1:], "d2re-gui")
