@@ -240,27 +240,33 @@ class DropSimulator:
 # CLI
 # ─────────────────────────────────────────────────────────────────────────────
 
-def main():
+def main() -> int:
     ap = argparse.ArgumentParser(description="D2 item generation simulator")
     ap.add_argument("--seed",   type=lambda x: int(x, 0), help="Item seed (hex or dec)")
     ap.add_argument("--base",   help="Base item code (e.g. 'swrd', '7cf')")
     ap.add_argument("--ilvl",   type=int, default=80)
-    ap.add_argument("--mf",     type=int, default=0, help="Magic Find %")
+    ap.add_argument("--mf",     type=int, default=0, help="Magic Find percent")
     ap.add_argument("--mlvl",   type=int, default=85, help="Monster level")
     ap.add_argument("--alvl",   type=int, default=85, help="Area level")
     ap.add_argument("--tc",     help="Treasure class name to simulate")
     ap.add_argument("--runs",   type=int, default=10000)
-    ap.add_argument("--brute",  action="store_true", help="Brute-force seeds for target")
-    ap.add_argument("--target", help="Target item name for brute-force")
+    ap.add_argument("--brute",  action="store_true", help="Disabled: planned brute-force seed search")
+    ap.add_argument("--target", help="Disabled: planned target item for brute-force search")
     ap.add_argument("--affix",  action="store_true", help="Roll magic affixes")
     args = ap.parse_args()
+
+    if args.brute or args.target:
+        print("item_roller: brute-force seed search is temporarily disabled.")
+        print("The flags are kept in place so the feature can be implemented incrementally.")
+        print("Use --seed, --base, --tc, --runs, and --affix for currently supported workflows.")
+        return 2
 
     # Treasure class simulation
     if args.tc:
         tc_path = os.path.join(DATA_DIR, "tc_tree.json")
         if not os.path.exists(tc_path):
             print(f"TC tree not found at {tc_path}. Run mpq_extract.py --tc-tree first.")
-            return
+            return 1
         with open(tc_path) as f:
             tc_tree = json.load(f)
         sim = DropSimulator(tc_tree)
@@ -271,7 +277,7 @@ def main():
             pct = count * 100.0 / args.runs
             bar = "█" * int(pct / 2)
             print(f"  {code:6}  {count:6}  ({pct:5.2f}%)  {bar}")
-        return
+        return 0
 
     # Single seed quality roll
     if args.seed is not None:
@@ -293,7 +299,7 @@ def main():
                 print(f"\nMagic Affixes:")
                 print(f"  Prefix: {roll.prefix_name or '(none)'}")
                 print(f"  Suffix: {roll.suffix_name or '(none)'}")
-        return
+        return 0
 
     # Quick simulation: roll N random seeds and tally quality distribution
     if args.base:
@@ -312,10 +318,11 @@ def main():
             bar   = "█" * max(1, int(pct))
             if count > 0:
                 print(f"  {QUAL_NAMES[q]:10} {count:6}  ({pct:6.3f}%)  {bar}")
-        return
+        return 0
 
     ap.print_help()
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

@@ -22,6 +22,17 @@ SCRIPT_MODULES: dict[str, Tuple[str, str]] = {
     "gui": ("d2re.gui", "d2re-gui"),
 }
 
+DISABLED_COMMANDS: dict[str, str] = {
+    "doctor": (
+        "The 'doctor' command is currently disabled while the environment and "
+        "repository self-check surface is implemented in phases."
+    ),
+    "gui": (
+        "The 'gui' command is currently disabled while the desktop and IDE "
+        "surface is implemented in phases."
+    ),
+}
+
 
 def _dispatch(module_name: str, argv: List[str], prog_name: str) -> int:
     old_argv = sys.argv[:]
@@ -42,6 +53,14 @@ def _dispatch(module_name: str, argv: List[str], prog_name: str) -> int:
         return 0
     finally:
         sys.argv = old_argv
+
+
+def _print_disabled(command: str) -> int:
+    reason = DISABLED_COMMANDS[command]
+    print(f"d2re: '{command}' is temporarily disabled.")
+    print(reason)
+    print("It remains registered in the CLI so it can be implemented incrementally.")
+    return 2
 
 
 def _add_passthrough_parser(
@@ -72,8 +91,8 @@ def build_parser() -> argparse.ArgumentParser:
             "  d2re extract --all-mpqs 'C:/Diablo II/' --table weapons --csv\n"
             "  d2re tc --tc 'Act 5 Super C' --resolve --top 25\n"
             "  d2re drops --tc 'Mephisto (N)' --item weap87 --runs 250000\n"
-            "  d2re doctor\n"
-            "  d2re gui"
+            "  d2re doctor   # temporarily disabled\n"
+            "  d2re gui      # temporarily disabled"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -87,8 +106,16 @@ def build_parser() -> argparse.ArgumentParser:
     _add_passthrough_parser(subparsers, "map", "Run the map seed analysis tool.")
     _add_passthrough_parser(subparsers, "tc", "Explore treasure class trees.")
     _add_passthrough_parser(subparsers, "drops", "Run the Monte Carlo drop calculator.")
-    _add_passthrough_parser(subparsers, "doctor", "Run repository and environment self-checks.")
-    _add_passthrough_parser(subparsers, "gui", "Launch the desktop GUI manager.")
+    _add_passthrough_parser(
+        subparsers,
+        "doctor",
+        "Run repository and environment self-checks (currently disabled).",
+    )
+    _add_passthrough_parser(
+        subparsers,
+        "gui",
+        "Launch the desktop GUI manager (currently disabled).",
+    )
     return parser
 
 
@@ -100,6 +127,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     if not ns.command:
         parser.print_help()
         return 0
+
+    if ns.command in DISABLED_COMMANDS:
+        return _print_disabled(ns.command)
 
     module_name, prog_name = SCRIPT_MODULES[ns.command]
     return _dispatch(module_name, ns.args, prog_name)
@@ -134,8 +164,8 @@ def drops_main() -> int:
 
 
 def doctor_main() -> int:
-    return _dispatch("d2re.doctor", sys.argv[1:], "d2re-doctor")
+    return _print_disabled("doctor")
 
 
 def gui_main() -> int:
-    return _dispatch("d2re.gui", sys.argv[1:], "d2re-gui")
+    return _print_disabled("gui")
