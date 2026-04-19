@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import http.client
 import io
+import json
 import tempfile
 import unittest
 from contextlib import redirect_stdout
@@ -14,7 +16,7 @@ from d2re import cli, gui
 
 class GuiWorkbenchTests(unittest.TestCase):
     def test_render_workbench_contains_accessibility_and_design_tokens(self) -> None:
-        html = gui.render_workbench()
+        html = gui.render_workbench(server_mode=True, csrf_token="test-token")
 
         self.assertIn("D2RE Visual Workbench", html)
         self.assertIn("Skip to workbench modules", html)
@@ -23,6 +25,7 @@ class GuiWorkbenchTests(unittest.TestCase):
         self.assertIn("aria-live", html)
         self.assertIn("Treasure Labyrinth", html)
         self.assertIn("/api/run", html)
+        self.assertIn("test-token", html)
 
     def test_write_workbench_creates_html_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -99,14 +102,28 @@ class GuiWorkbenchTests(unittest.TestCase):
         self.assertIn("--demo", command)
         self.assertIn("--verbose", command)
 
-    def test_gui_server_no_open_prints_url_and_shuts_down(self) -> None:
+    def test_gui_server_no_wait_prints_url_and_shuts_down(self) -> None:
         buffer = io.StringIO()
         with redirect_stdout(buffer), patch("webbrowser.open") as mocked_open:
-            code = gui.main(["--no-open", "--print-path"])
+            code = gui.main(["--no-open", "--print-path", "--no-wait"])
 
         self.assertEqual(code, 0)
         self.assertIn("http://127.0.0.1:", buffer.getvalue())
         mocked_open.assert_not_called()
+
+    def test_loopback_server_rejects_missing_token(self) -> None:
+        server, url = gui.serve_workbench(open_browser=False)
+        try:
+            port = int(url.rsplit(":", 1)[1].rstrip("/"))
+            conn = http.client.HTTPConnection("127.0.0.1", port, timeout=5)
+            body = json.dumps({"action": "packet-timeline", "values": {"demo": True}})
+            conn.request("POST", "/api/run", body=body, headers={"Content-Type": "application/json"})
+            response = conn.getresponse()
+            self.assertEqual(response.status, 403)
+            self.assertIn("Invalid workbench token", response.read().decode("utf-8"))
+        finally:
+            server.shutdown()
+            server.server_close()
 
 
 if __name__ == "__main__":
