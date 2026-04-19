@@ -15,7 +15,7 @@ import tempfile
 import webbrowser
 from dataclasses import dataclass, asdict
 from pathlib import Path
-from typing import Iterable, Sequence
+from typing import Iterable
 
 
 @dataclass(frozen=True)
@@ -164,7 +164,6 @@ def render_workbench(model: WorkbenchModel | None = None) -> str:
       --border-blood: rgba(209, 59, 50, 0.42);
       --text-primary: var(--primitive-parchment-100);
       --text-secondary: var(--primitive-muted-300);
-      --text-danger: #ffb1aa;
       --accent: var(--primitive-blood-500);
       --accent-hot: var(--primitive-ember-400);
       --focus: #ffd28a;
@@ -178,372 +177,66 @@ def render_workbench(model: WorkbenchModel | None = None) -> str:
       --space-4: 1rem;
       --space-5: 1.25rem;
       --space-6: 1.5rem;
-      --space-8: 2rem;
       --font-display: Georgia, \"Times New Roman\", serif;
       --font-body: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, \"Segoe UI\", sans-serif;
       --font-mono: \"SFMono-Regular\", Consolas, \"Liberation Mono\", monospace;
     }}
 
     * {{ box-sizing: border-box; }}
-
     html {{ scroll-behavior: smooth; }}
-
-    body {{
-      margin: 0;
-      min-height: 100vh;
-      background: var(--surface-page);
-      color: var(--text-primary);
-      font-family: var(--font-body);
-      font-size: 16px;
-      line-height: 1.55;
-    }}
-
-    body::before {{
-      content: \"\";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-      background-size: 44px 44px;
-      mask-image: radial-gradient(circle at center, black, transparent 80%);
-    }}
-
+    body {{ margin: 0; min-height: 100vh; background: var(--surface-page); color: var(--text-primary); font-family: var(--font-body); font-size: 16px; line-height: 1.55; }}
+    body::before {{ content: \"\"; position: fixed; inset: 0; pointer-events: none; background-image: linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px); background-size: 44px 44px; mask-image: radial-gradient(circle at center, black, transparent 80%); }}
     a {{ color: var(--primitive-parchment-100); }}
-
-    .skip-link {{
-      position: absolute;
-      left: var(--space-4);
-      top: -4rem;
-      z-index: 10;
-      padding: var(--space-3) var(--space-4);
-      border-radius: var(--radius-control);
-      background: var(--primitive-parchment-100);
-      color: var(--primitive-obsidian-950);
-      transition: top 160ms ease;
-    }}
-
+    .skip-link {{ position: absolute; left: var(--space-4); top: -4rem; z-index: 10; padding: var(--space-3) var(--space-4); border-radius: var(--radius-control); background: var(--primitive-parchment-100); color: var(--primitive-obsidian-950); transition: top 160ms ease; }}
     .skip-link:focus {{ top: var(--space-4); }}
-
-    :focus-visible {{
-      outline: 3px solid var(--focus);
-      outline-offset: 3px;
-    }}
-
-    .shell {{
-      width: min(1440px, 100%);
-      margin: 0 auto;
-      padding: clamp(1rem, 2vw, 2rem);
-    }}
-
-    .hero {{
-      display: grid;
-      grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
-      gap: var(--space-6);
-      align-items: stretch;
-      margin-bottom: var(--space-6);
-    }}
-
-    .panel {{
-      position: relative;
-      overflow: hidden;
-      border: 1px solid var(--border-metal);
-      border-radius: var(--radius-panel);
-      background: var(--surface-panel);
-      box-shadow: var(--shadow-panel);
-    }}
-
-    .panel::before {{
-      content: \"\";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      border-radius: inherit;
-      background: linear-gradient(135deg, rgba(247, 234, 208, 0.11), transparent 18%, rgba(209, 59, 50, 0.08));
-    }}
-
+    :focus-visible {{ outline: 3px solid var(--focus); outline-offset: 3px; }}
+    .shell {{ width: min(1440px, 100%); margin: 0 auto; padding: clamp(1rem, 2vw, 2rem); }}
+    .hero {{ display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr); gap: var(--space-6); align-items: stretch; margin-bottom: var(--space-6); }}
+    .panel {{ position: relative; overflow: hidden; border: 1px solid var(--border-metal); border-radius: var(--radius-panel); background: var(--surface-panel); box-shadow: var(--shadow-panel); }}
+    .panel::before {{ content: \"\"; position: absolute; inset: 0; pointer-events: none; border-radius: inherit; background: linear-gradient(135deg, rgba(247, 234, 208, 0.11), transparent 18%, rgba(209, 59, 50, 0.08)); }}
     .hero-main {{ padding: clamp(1.5rem, 4vw, 4rem); }}
-
-    .eyebrow {{
-      display: inline-flex;
-      align-items: center;
-      min-height: 44px;
-      gap: var(--space-2);
-      color: var(--accent-hot);
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-      font-size: 0.78rem;
-      font-weight: 800;
-    }}
-
-    h1, h2, h3 {{
-      margin: 0;
-      font-family: var(--font-display);
-      line-height: 1.05;
-    }}
-
-    h1 {{
-      max-width: 13ch;
-      margin-top: var(--space-3);
-      font-size: clamp(2.75rem, 8vw, 6.8rem);
-      letter-spacing: -0.06em;
-    }}
-
-    .hero-copy {{
-      max-width: 68ch;
-      margin: var(--space-5) 0 0;
-      color: var(--text-secondary);
-      font-size: clamp(1rem, 1.4vw, 1.2rem);
-    }}
-
-    .hero-side {{
-      display: grid;
-      gap: var(--space-4);
-      padding: var(--space-5);
-      background: var(--surface-panel-strong);
-    }}
-
-    .stat-card {{
-      min-height: 44px;
-      padding: var(--space-4);
-      border: 1px solid var(--border-metal);
-      border-radius: 16px;
-      background: var(--surface-parchment);
-    }}
-
-    .stat-card strong {{
-      display: block;
-      margin-bottom: var(--space-1);
-      color: var(--primitive-parchment-100);
-    }}
-
+    .eyebrow {{ display: inline-flex; align-items: center; min-height: 44px; gap: var(--space-2); color: var(--accent-hot); letter-spacing: 0.16em; text-transform: uppercase; font-size: 0.78rem; font-weight: 800; }}
+    h1, h2, h3 {{ margin: 0; font-family: var(--font-display); line-height: 1.05; }}
+    h1 {{ max-width: 13ch; margin-top: var(--space-3); font-size: clamp(2.75rem, 8vw, 6.8rem); letter-spacing: -0.06em; }}
+    .hero-copy {{ max-width: 68ch; margin: var(--space-5) 0 0; color: var(--text-secondary); font-size: clamp(1rem, 1.4vw, 1.2rem); }}
+    .hero-side {{ display: grid; gap: var(--space-4); padding: var(--space-5); background: var(--surface-panel-strong); }}
+    .stat-card {{ min-height: 44px; padding: var(--space-4); border: 1px solid var(--border-metal); border-radius: 16px; background: var(--surface-parchment); }}
+    .stat-card strong {{ display: block; margin-bottom: var(--space-1); color: var(--primitive-parchment-100); }}
     .stat-card span {{ color: var(--text-secondary); }}
-
-    .toolbar {{
-      display: grid;
-      grid-template-columns: minmax(220px, 1fr) auto auto;
-      gap: var(--space-3);
-      align-items: center;
-      margin-bottom: var(--space-6);
-      padding: var(--space-4);
-    }}
-
-    label {{
-      display: grid;
-      gap: var(--space-2);
-      font-weight: 700;
-      color: var(--primitive-parchment-100);
-    }}
-
-    input, select, button {{
-      min-height: 44px;
-      border-radius: var(--radius-control);
-      border: 1px solid var(--border-metal);
-      font: inherit;
-    }}
-
-    input, select {{
-      width: 100%;
-      padding: 0 var(--space-4);
-      background: rgba(0, 0, 0, 0.26);
-      color: var(--text-primary);
-    }}
-
-    button {{
-      cursor: pointer;
-      padding: 0 var(--space-4);
-      background: linear-gradient(180deg, rgba(209, 59, 50, 0.95), rgba(118, 25, 22, 0.96));
-      color: var(--primitive-parchment-100);
-      font-weight: 800;
-      box-shadow: var(--shadow-glow);
-    }}
-
-    button.secondary {{
-      background: rgba(247, 234, 208, 0.08);
-      color: var(--primitive-parchment-100);
-      box-shadow: none;
-    }}
-
-    .layout {{
-      display: grid;
-      grid-template-columns: 280px minmax(0, 1fr);
-      gap: var(--space-6);
-      align-items: start;
-    }}
-
-    .nav-panel {{
-      position: sticky;
-      top: var(--space-4);
-      padding: var(--space-4);
-    }}
-
+    .toolbar {{ display: grid; grid-template-columns: minmax(220px, 1fr) auto auto; gap: var(--space-3); align-items: center; margin-bottom: var(--space-6); padding: var(--space-4); }}
+    label {{ display: grid; gap: var(--space-2); font-weight: 700; color: var(--primitive-parchment-100); }}
+    input, select, button {{ min-height: 44px; border-radius: var(--radius-control); border: 1px solid var(--border-metal); font: inherit; }}
+    input, select {{ width: 100%; padding: 0 var(--space-4); background: rgba(0, 0, 0, 0.26); color: var(--text-primary); }}
+    button {{ cursor: pointer; padding: 0 var(--space-4); background: linear-gradient(180deg, rgba(209, 59, 50, 0.95), rgba(118, 25, 22, 0.96)); color: var(--primitive-parchment-100); font-weight: 800; box-shadow: var(--shadow-glow); }}
+    button.secondary {{ background: rgba(247, 234, 208, 0.08); color: var(--primitive-parchment-100); box-shadow: none; }}
+    .layout {{ display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: var(--space-6); align-items: start; }}
+    .nav-panel {{ position: sticky; top: var(--space-4); padding: var(--space-4); }}
     .nav-panel h2 {{ font-size: 1.35rem; }}
-
-    .module-list {{
-      display: grid;
-      gap: var(--space-2);
-      margin-top: var(--space-4);
-    }}
-
-    .module-link {{
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: var(--space-3);
-      min-height: 44px;
-      padding: var(--space-3);
-      border: 1px solid transparent;
-      border-radius: var(--radius-control);
-      color: var(--text-primary);
-      text-decoration: none;
-    }}
-
-    .module-link:hover, .module-link[aria-current=\"true\"] {{
-      border-color: var(--border-blood);
-      background: rgba(209, 59, 50, 0.12);
-    }}
-
-    .cards {{
-      display: grid;
-      gap: var(--space-5);
-    }}
-
-    .card {{
-      display: grid;
-      gap: var(--space-4);
-      padding: var(--space-5);
-    }}
-
-    .card-header {{
-      display: flex;
-      justify-content: space-between;
-      gap: var(--space-4);
-      align-items: start;
-    }}
-
+    .module-list {{ display: grid; gap: var(--space-2); margin-top: var(--space-4); }}
+    .module-link {{ display: flex; justify-content: space-between; align-items: center; gap: var(--space-3); min-height: 44px; padding: var(--space-3); border: 1px solid transparent; border-radius: var(--radius-control); color: var(--text-primary); text-decoration: none; }}
+    .module-link:hover, .module-link[aria-current=\"true\"] {{ border-color: var(--border-blood); background: rgba(209, 59, 50, 0.12); }}
+    .cards {{ display: grid; gap: var(--space-5); }}
+    .card {{ display: grid; gap: var(--space-4); padding: var(--space-5); }}
+    .card-header {{ display: flex; justify-content: space-between; gap: var(--space-4); align-items: start; }}
     .card h3 {{ font-size: clamp(1.45rem, 3vw, 2.3rem); }}
-
-    .status {{
-      display: inline-flex;
-      align-items: center;
-      min-height: 32px;
-      padding: 0 var(--space-3);
-      border: 1px solid var(--border-metal);
-      border-radius: 999px;
-      color: var(--text-secondary);
-      font-size: 0.84rem;
-      font-weight: 800;
-      white-space: nowrap;
-    }}
-
-    .status[data-status=\"Active\"] {{
-      border-color: rgba(240, 154, 74, 0.55);
-      color: var(--accent-hot);
-    }}
-
-    .status[data-status=\"Planned\"] {{
-      border-color: rgba(187, 168, 141, 0.38);
-      color: var(--text-secondary);
-    }}
-
-    .summary {{
-      max-width: 72ch;
-      margin: 0;
-      color: var(--text-secondary);
-    }}
-
-    .command-row {{
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) auto;
-      gap: var(--space-3);
-      align-items: center;
-      padding: var(--space-3);
-      border: 1px solid var(--border-metal);
-      border-radius: 16px;
-      background: rgba(0, 0, 0, 0.28);
-    }}
-
-    code {{
-      color: var(--primitive-parchment-100);
-      font-family: var(--font-mono);
-      overflow-wrap: anywhere;
-    }}
-
-    details {{
-      padding: var(--space-4);
-      border: 1px solid var(--border-metal);
-      border-radius: 16px;
-      background: rgba(247, 234, 208, 0.035);
-    }}
-
-    summary {{
-      min-height: 44px;
-      cursor: pointer;
-      font-weight: 800;
-    }}
-
-    .tag-list {{
-      display: flex;
-      flex-wrap: wrap;
-      gap: var(--space-2);
-      padding: 0;
-      margin: 0;
-      list-style: none;
-    }}
-
-    .tag-list li {{
-      padding: 0.2rem 0.55rem;
-      border: 1px solid var(--border-metal);
-      border-radius: 999px;
-      color: var(--text-secondary);
-      font-size: 0.84rem;
-    }}
-
-    .toast {{
-      position: fixed;
-      right: var(--space-4);
-      bottom: var(--space-4);
-      max-width: min(420px, calc(100vw - 2rem));
-      padding: var(--space-4);
-      border: 1px solid var(--border-blood);
-      border-radius: var(--radius-control);
-      background: var(--surface-panel-strong);
-      color: var(--primitive-parchment-100);
-      box-shadow: var(--shadow-panel);
-      transform: translateY(140%);
-      transition: transform 180ms ease;
-    }}
-
+    .status {{ display: inline-flex; align-items: center; min-height: 32px; padding: 0 var(--space-3); border: 1px solid var(--border-metal); border-radius: 999px; color: var(--text-secondary); font-size: 0.84rem; font-weight: 800; white-space: nowrap; }}
+    .status[data-status=\"Active\"] {{ border-color: rgba(240, 154, 74, 0.55); color: var(--accent-hot); }}
+    .status[data-status=\"Planned\"] {{ border-color: rgba(187, 168, 141, 0.38); color: var(--text-secondary); }}
+    .summary {{ max-width: 72ch; margin: 0; color: var(--text-secondary); }}
+    .command-row {{ display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: var(--space-3); align-items: center; padding: var(--space-3); border: 1px solid var(--border-metal); border-radius: 16px; background: rgba(0, 0, 0, 0.28); }}
+    code {{ color: var(--primitive-parchment-100); font-family: var(--font-mono); overflow-wrap: anywhere; }}
+    details {{ padding: var(--space-4); border: 1px solid var(--border-metal); border-radius: 16px; background: rgba(247, 234, 208, 0.035); }}
+    summary {{ min-height: 44px; cursor: pointer; font-weight: 800; }}
+    .tag-list {{ display: flex; flex-wrap: wrap; gap: var(--space-2); padding: 0; margin: 0; list-style: none; }}
+    .tag-list li {{ padding: 0.2rem 0.55rem; border: 1px solid var(--border-metal); border-radius: 999px; color: var(--text-secondary); font-size: 0.84rem; }}
+    .toast {{ position: fixed; right: var(--space-4); bottom: var(--space-4); max-width: min(420px, calc(100vw - 2rem)); padding: var(--space-4); border: 1px solid var(--border-blood); border-radius: var(--radius-control); background: var(--surface-panel-strong); color: var(--primitive-parchment-100); box-shadow: var(--shadow-panel); transform: translateY(140%); transition: transform 180ms ease; }}
     .toast[data-visible=\"true\"] {{ transform: translateY(0); }}
-
-    .empty {{
-      display: none;
-      padding: var(--space-6);
-      text-align: center;
-      color: var(--text-secondary);
-    }}
-
+    .empty {{ display: none; padding: var(--space-6); text-align: center; color: var(--text-secondary); }}
     .empty[data-visible=\"true\"] {{ display: block; }}
 
-    @media (max-width: 920px) {{
-      .hero, .layout, .toolbar {{ grid-template-columns: 1fr; }}
-      .nav-panel {{ position: static; }}
-    }}
-
-    @media (max-width: 560px) {{
-      .shell {{ padding: var(--space-3); }}
-      .card-header, .command-row {{ grid-template-columns: 1fr; }}
-      .card-header {{ display: grid; }}
-      button {{ width: 100%; }}
-    }}
-
-    @media (prefers-reduced-motion: reduce) {{
-      *, *::before, *::after {{
-        scroll-behavior: auto !important;
-        transition-duration: 0.001ms !important;
-        animation-duration: 0.001ms !important;
-        animation-iteration-count: 1 !important;
-      }}
-    }}
+    @media (max-width: 920px) {{ .hero, .layout, .toolbar {{ grid-template-columns: 1fr; }} .nav-panel {{ position: static; }} }}
+    @media (max-width: 560px) {{ .shell {{ padding: var(--space-3); }} .card-header, .command-row {{ grid-template-columns: 1fr; }} .card-header {{ display: grid; }} button {{ width: 100%; }} }}
+    @media (prefers-reduced-motion: reduce) {{ *, *::before, *::after {{ scroll-behavior: auto !important; transition-duration: 0.001ms !important; animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; }} }}
   </style>
 </head>
 <body>
@@ -602,6 +295,12 @@ def render_workbench(model: WorkbenchModel | None = None) -> str:
       return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     }}
 
+    function escapeHtml(value) {{
+      return value.replace(/[&<>\"']/g, character => ({{
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;'
+      }})[character]);
+    }}
+
     function matches(card) {{
       const needle = searchEl.value.trim().toLowerCase();
       const status = statusEl.value;
@@ -622,9 +321,7 @@ def render_workbench(model: WorkbenchModel | None = None) -> str:
       toastEl.textContent = message;
       toastEl.dataset.visible = 'true';
       window.clearTimeout(showToast.timeout);
-      showToast.timeout = window.setTimeout(() => {{
-        toastEl.dataset.visible = 'false';
-      }}, 2200);
+      showToast.timeout = window.setTimeout(() => {{ toastEl.dataset.visible = 'false'; }}, 2200);
     }}
 
     function render() {{
@@ -638,7 +335,7 @@ def render_workbench(model: WorkbenchModel | None = None) -> str:
         const nav = document.createElement('a');
         nav.className = 'module-link';
         nav.href = `#${{id}}`;
-        nav.innerHTML = `<span>${{card.title}}</span><span>${{card.status}}</span>`;
+        nav.innerHTML = `<span>${{escapeHtml(card.title)}}</span><span>${{escapeHtml(card.status)}}</span>`;
         navEl.appendChild(nav);
 
         const article = document.createElement('article');
@@ -649,27 +346,24 @@ def render_workbench(model: WorkbenchModel | None = None) -> str:
           <div class=\"card-header\">
             <div>
               <p class=\"eyebrow\">Module ${{index + 1}}</p>
-              <h3>${{card.title}}</h3>
+              <h3>${{escapeHtml(card.title)}}</h3>
             </div>
-            <span class=\"status\" data-status=\"${{card.status}}\">${{card.status}}</span>
+            <span class=\"status\" data-status=\"${{escapeHtml(card.status)}}\">${{escapeHtml(card.status)}}</span>
           </div>
-          <p class=\"summary\">${{card.summary}}</p>
+          <p class=\"summary\">${{escapeHtml(card.summary)}}</p>
           <div class=\"command-row\">
-            <code>${{card.command}}</code>
-            <button type=\"button\" data-command=\"${{card.command.replaceAll('\\\"', '&quot;')}}\">Copy command</button>
+            <code>${{escapeHtml(card.command)}}</code>
+            <button class=\"copy-command\" type=\"button\">Copy command</button>
           </div>
           <details>
             <summary>When to use this module</summary>
-            <p>${{card.detail}}</p>
+            <p>${{escapeHtml(card.detail)}}</p>
           </details>
           <ul class=\"tag-list\" aria-label=\"Module tags\">
-            ${{card.tags.map(tag => `<li>${{tag}}</li>`).join('')}}
+            ${{card.tags.map(tag => `<li>${{escapeHtml(tag)}}</li>`).join('')}}
           </ul>`;
+        article.querySelector('.copy-command').addEventListener('click', () => copyCommand(card.command));
         cardsEl.appendChild(article);
-      }});
-
-      document.querySelectorAll('[data-command]').forEach(button => {{
-        button.addEventListener('click', () => copyCommand(button.dataset.command));
       }});
     }}
 
