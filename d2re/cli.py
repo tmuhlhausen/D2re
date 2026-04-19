@@ -79,15 +79,16 @@ def _add_passthrough_parser(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="d2re",
-        description="Unified CLI for the D2RE toolkit.",
+        description="Unified CLI for the D2RE toolkit. Running `d2re` with no command opens the visual workbench.",
         epilog=(
             "Examples:\n"
+            "  d2re                         # open the GUI workbench\n"
+            "  d2re gui --no-open --print-path\n"
             "  d2re parse MyChar.d2s --json\n"
             "  d2re roll --seed 0xDEADBEEF --ilvl 85 --mf 300\n"
             "  d2re extract --all-mpqs 'C:/Diablo II/' --table weapons --csv\n"
             "  d2re tc --tc 'Act 5 Super C' --resolve --top 25\n"
             "  d2re drops --tc 'Mephisto (N)' --item weap87 --runs 250000\n"
-            "  d2re gui --no-open --print-path\n"
             "  d2re doctor   # temporarily disabled"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -121,8 +122,7 @@ def main(argv: Iterable[str] | None = None) -> int:
     ns = parser.parse_args(args)
 
     if not ns.command:
-        parser.print_help()
-        return 0
+        return _dispatch("d2re.gui", [], "d2re-gui")
 
     if ns.command in DISABLED_COMMANDS:
         return _print_disabled(ns.command)
