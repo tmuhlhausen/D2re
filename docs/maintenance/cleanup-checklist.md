@@ -9,22 +9,24 @@ Status legend: `[ ]` not started · `[~]` started · `[x]` complete · `[disable
 - [x] Keep `d2re doctor` registered but deactivate it until `d2re.doctor` exists.
 - [x] Keep `d2re gui` registered but deactivate it until the GUI / IDE surface exists.
 - [x] Keep `item_roller --brute` and `--target` registered but deactivate the unfinished brute-force workflow.
-- [ ] Add smoke tests that prove disabled commands exit cleanly instead of raising `ModuleNotFoundError`.
-- [ ] Add smoke tests that prove disabled item roller flags return a clear message.
+- [x] Add smoke tests that prove disabled commands exit cleanly instead of raising `ModuleNotFoundError`.
+- [x] Add smoke tests that prove disabled item roller flags return a clear message.
 
 ## Phase 2 — Repair release metadata
 
-- [ ] Decide whether the current branch is truly `1.1.0` or should be rolled back to `1.0.x`.
-- [ ] Replace placeholder changelog dates.
-- [ ] Split shipped work from planned work under `CHANGELOG.md`.
-- [ ] Add an `Unreleased` section for in-progress cleanup.
+- [x] Decide whether the current branch is truly `1.1.0` or should be rolled back to `1.0.x`.
+- [x] Replace placeholder changelog dates.
+- [x] Split shipped work from planned work under `CHANGELOG.md`.
+- [x] Add an `Unreleased` section for in-progress cleanup.
 
 ## Phase 3 — Repair documentation truthfulness
 
 - [x] Mark the hooking guide as a draft placeholder.
 - [x] Mark the emulator/server guide as a draft placeholder.
-- [ ] Fix clone URLs so they point to `https://github.com/tmuhlhausen/D2re.git`.
-- [ ] Rewrite `docs/getting-started.md` into a short onboarding guide instead of a README duplicate.
+- [~] Fix clone URLs so they point to `https://github.com/tmuhlhausen/D2re.git`.
+  - `docs/getting-started.md` is fixed.
+  - `README.md` still needs a focused follow-up patch because it is a large legacy document.
+- [x] Rewrite `docs/getting-started.md` into a short onboarding guide instead of a README duplicate.
 - [ ] Update the README project tree to include the current `d2re/`, `tools/`, `scripts/`, `docs/architecture/`, and maintenance docs.
 - [ ] Fix example paths so documented paths match the repository.
 
@@ -37,9 +39,8 @@ Status legend: `[ ]` not started · `[~]` started · `[x]` complete · `[disable
 
 ## Phase 5 — Add the minimum quality floor
 
-- [ ] Add `tests/test_cli_smoke.py`.
-- [ ] Add `tests/test_item_roller_disabled_flags.py`.
-- [ ] Add `tests/test_imports.py`.
+- [x] Add disabled command smoke tests in `tests/test_disabled_commands.py`.
+- [ ] Add broader import smoke tests.
 - [ ] Add a lightweight GitHub Actions workflow that runs smoke tests on Linux.
 - [ ] Add fixtures only when their provenance and redistribution status are clear.
 
