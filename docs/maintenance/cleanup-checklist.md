@@ -7,7 +7,7 @@ Status legend: `[ ]` not started · `[~]` started · `[x]` complete · `[disable
 ## Phase 1 — Stop misleading users
 
 - [x] Keep `d2re doctor` registered but deactivate it until `d2re.doctor` exists.
-- [x] Keep `d2re gui` registered but deactivate it until the GUI / IDE surface exists.
+- [x] Keep `d2re gui` registered while building it in phases.
 - [x] Keep `item_roller --brute` and `--target` registered but deactivate the unfinished brute-force workflow.
 - [x] Add smoke tests that prove disabled commands exit cleanly instead of raising `ModuleNotFoundError`.
 - [x] Add smoke tests that prove disabled item roller flags return a clear message.
@@ -40,6 +40,7 @@ Status legend: `[ ]` not started · `[~]` started · `[x]` complete · `[disable
 ## Phase 5 — Add the minimum quality floor
 
 - [x] Add disabled command smoke tests in `tests/test_disabled_commands.py`.
+- [x] Add GUI workbench smoke tests in `tests/test_gui_workbench.py`.
 - [ ] Add broader import smoke tests.
 - [ ] Add a lightweight GitHub Actions workflow that runs smoke tests on Linux.
 - [ ] Add fixtures only when their provenance and redistribution status are clear.
@@ -56,10 +57,13 @@ Status legend: `[ ]` not started · `[~]` started · `[x]` complete · `[disable
 
 ### `d2re gui`
 
-- [ ] Start with a local-only launcher message and design spec.
-- [ ] Add a read-only desktop dashboard or local web viewer.
-- [ ] Reuse stable parser outputs rather than shelling out to brittle scripts.
-- [ ] Clearly label experimental UI panes.
+- [x] Start with a local-only launcher message and design spec.
+- [x] Add a read-only desktop dashboard or local web viewer.
+- [x] Reuse stable parser outputs and command surfaces rather than shelling out to brittle scripts.
+- [x] Clearly label experimental UI panes.
+- [ ] Add local JSON import for parser output.
+- [ ] Add schema-aware result viewers.
+- [ ] Add a visual command builder for common workflows.
 
 ### `item_roller --brute`
 
