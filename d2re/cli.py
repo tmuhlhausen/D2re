@@ -27,10 +27,6 @@ DISABLED_COMMANDS: dict[str, str] = {
         "The 'doctor' command is currently disabled while the environment and "
         "repository self-check surface is implemented in phases."
     ),
-    "gui": (
-        "The 'gui' command is currently disabled while the desktop and IDE "
-        "surface is implemented in phases."
-    ),
 }
 
 
@@ -91,8 +87,8 @@ def build_parser() -> argparse.ArgumentParser:
             "  d2re extract --all-mpqs 'C:/Diablo II/' --table weapons --csv\n"
             "  d2re tc --tc 'Act 5 Super C' --resolve --top 25\n"
             "  d2re drops --tc 'Mephisto (N)' --item weap87 --runs 250000\n"
-            "  d2re doctor   # temporarily disabled\n"
-            "  d2re gui      # temporarily disabled"
+            "  d2re gui --no-open --print-path\n"
+            "  d2re doctor   # temporarily disabled"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -114,7 +110,7 @@ def build_parser() -> argparse.ArgumentParser:
     _add_passthrough_parser(
         subparsers,
         "gui",
-        "Launch the desktop GUI manager (currently disabled).",
+        "Generate and optionally open the local visual workbench.",
     )
     return parser
 
@@ -168,4 +164,4 @@ def doctor_main() -> int:
 
 
 def gui_main() -> int:
-    return _print_disabled("gui")
+    return _dispatch("d2re.gui", sys.argv[1:], "d2re-gui")
