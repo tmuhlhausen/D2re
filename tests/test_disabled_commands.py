@@ -31,26 +31,12 @@ class DisabledCommandTests(unittest.TestCase):
         self.assertIn("temporarily disabled", output)
         self.assertIn("doctor", output)
 
-    def test_gui_command_is_registered_but_disabled(self) -> None:
-        code, output = self.capture_return(lambda: cli.main(["gui"]))
-
-        self.assertEqual(code, 2)
-        self.assertIn("temporarily disabled", output)
-        self.assertIn("gui", output)
-
     def test_doctor_console_entrypoint_is_disabled(self) -> None:
         code, output = self.capture_return(cli.doctor_main)
 
         self.assertEqual(code, 2)
         self.assertIn("temporarily disabled", output)
         self.assertIn("doctor", output)
-
-    def test_gui_console_entrypoint_is_disabled(self) -> None:
-        code, output = self.capture_return(cli.gui_main)
-
-        self.assertEqual(code, 2)
-        self.assertIn("temporarily disabled", output)
-        self.assertIn("gui", output)
 
     def test_item_roller_brute_force_flags_are_disabled(self) -> None:
         old_argv = sys.argv[:]

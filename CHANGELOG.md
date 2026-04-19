@@ -8,11 +8,22 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ## [Unreleased]
 
+### Added
+
+- Add the first local Visual Workbench GUI through `d2re gui` and `d2re-gui`.
+- Add `d2re/gui.py` with standalone HTML generation for a read-only browser workbench.
+- Add `docs/gui-workbench.md` describing launch commands, design decisions, accessibility, safety, and next steps.
+- Add GUI smoke tests in `tests/test_gui_workbench.py`.
+
+### Changed
+
+- Activate `d2re gui` while keeping `d2re doctor` disabled.
+- Keep `item_roller --brute` and `--target` registered but disabled until bounded brute-force search is implemented.
+
 ### Cleanup in progress
 
 - Deactivate unfinished command surfaces without removing them:
   - `d2re doctor`
-  - `d2re gui`
   - `item_roller --brute`
   - `item_roller --target`
 - Rewrite `docs/getting-started.md` as a short onboarding guide instead of a README duplicate.
@@ -25,7 +36,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - Repair README project structure and example-path drift.
 - Add CI for smoke tests.
 - Implement `d2re doctor` as an environment and repository self-check command.
-- Implement the first read-only GUI / IDE surface behind `d2re gui`.
+- Add result-viewer panels that can consume stable JSON outputs.
 - Implement bounded brute-force seed search for `item_roller --brute`.
 
 ---
@@ -53,7 +64,7 @@ This section reflects the package version currently declared in `pyproject.toml`
 
 ### Known limitations
 
-- `d2re doctor` and `d2re gui` are reserved command surfaces but are not implemented yet.
+- `d2re doctor` is a reserved command surface but is not implemented yet.
 - `item_roller --brute` and `--target` are reserved flags but are not implemented yet.
 - Some long-form guides remain drafts and need worked examples.
 
