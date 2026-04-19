@@ -36,6 +36,22 @@ You can also run scripts directly, for example:
 python scripts/item_roller.py --help
 ```
 
+## Open the visual workbench
+
+The fastest way to see the toolkit map is the local browser GUI:
+
+```bash
+d2re gui
+```
+
+Generate it without opening a browser:
+
+```bash
+d2re gui --no-open --print-path
+```
+
+The workbench is read-only. It shows the major modules, explains when to use them, and gives copyable commands for save parsing, item rolling, Treasure Class exploration, drop simulation, map research, packet decoding, and table extraction.
+
 ## First smoke test: no game files required
 
 Run the packet sniffer demo mode. It uses built-in sample packets, so it does not require Diablo II, admin privileges, or a network interface.
@@ -125,9 +141,10 @@ d2re parse MyChar.d2s --json
 d2re roll --seed 0xDEADBEEF --ilvl 85 --mf 300
 d2re tc --tc "Act 5 Super C" --resolve --top 25
 d2re drops --tc "Mephisto (N)" --item weap87 --runs 250000
+d2re gui --no-open --print-path
 ```
 
-Current limitation: `d2re doctor` and `d2re gui` are intentionally visible but disabled. They are reserved for the upcoming self-check and visual interface work.
+Current limitation: `d2re doctor` is intentionally visible but disabled. It is reserved for the upcoming self-check work.
 
 ## Troubleshooting
 
@@ -162,6 +179,7 @@ That is deliberate for planned surfaces that were previously advertised before i
 ## Next reading
 
 - `README.md` for the full project overview
+- `docs/gui-workbench.md` for GUI details
 - `references/d2s-format.md` for save-file internals
 - `references/item-generation.md` for item rolling and Treasure Class logic
 - `references/packets.md` for protocol definitions
