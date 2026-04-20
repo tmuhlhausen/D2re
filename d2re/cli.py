@@ -82,6 +82,8 @@ def build_parser() -> argparse.ArgumentParser:
         description="Unified CLI for the D2RE toolkit.",
         epilog=(
             "Examples:\n"
+            "  d2re                 # open the GUI by default\n"
+            "  d2re --no-gui --help # show CLI help without opening the GUI\n"
             "  d2re parse MyChar.d2s --json\n"
             "  d2re roll --seed 0xDEADBEEF --ilvl 85 --mf 300\n"
             "  d2re extract --all-mpqs 'C:/Diablo II/' --table weapons --csv\n"
@@ -93,6 +95,11 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", action="version", version=f"d2re {__version__}")
+    parser.add_argument(
+        "--no-gui",
+        action="store_true",
+        help="Do not auto-launch the GUI when no command is supplied.",
+    )
 
     subparsers = parser.add_subparsers(dest="command")
     _add_passthrough_parser(subparsers, "parse", "Run the .d2s save parser.")
@@ -121,8 +128,10 @@ def main(argv: Iterable[str] | None = None) -> int:
     ns = parser.parse_args(args)
 
     if not ns.command:
-        parser.print_help()
-        return 0
+        if ns.no_gui:
+            parser.print_help()
+            return 0
+        return _dispatch("d2re.gui", [], "d2re-gui")
 
     if ns.command in DISABLED_COMMANDS:
         return _print_disabled(ns.command)
