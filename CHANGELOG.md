@@ -10,33 +10,35 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
-- Add the first local Visual Workbench GUI through `d2re gui` and `d2re-gui`.
-- Add `d2re/gui.py` with standalone HTML generation for a read-only browser workbench.
-- Add `docs/gui-workbench.md` describing launch commands, design decisions, accessibility, safety, and next steps.
-- Add GUI smoke tests in `tests/test_gui_workbench.py`.
+- Make the Visual Workbench the default `d2re` startup surface when no subcommand is supplied.
+- Add `--no-gui` to preserve terminal-first help behavior.
+- Add `d2re/gui_integrated.py` with a loopback-only interactive workbench server.
+- Add integrated GUI command builders and guarded run actions for:
+  - save parsing
+  - item rolling
+  - treasure-class exploration
+  - drop simulation
+  - map seed analysis
+  - packet demo/list/filter workflows
+  - MPQ/CASC data extraction
+- Add per-session token validation for GUI `/api/run` requests.
+- Add static mode through `d2re gui --static` for read-only command building and documentation use.
+- Expand GUI smoke tests for default launch, command building, guarded subprocess execution, and token rejection.
 
 ### Changed
 
-- Activate `d2re gui` while keeping `d2re doctor` disabled.
+- `d2re gui` now starts the interactive local workbench server by default instead of only writing static HTML.
+- `d2re/gui.py` is now a compatibility wrapper around the integrated GUI implementation.
+- Update `docs/gui-workbench.md` to describe default startup, interactive mode, static mode, safety boundaries, and implementation details.
+- Keep `d2re doctor` disabled until diagnostic checks are implemented.
 - Keep `item_roller --brute` and `--target` registered but disabled until bounded brute-force search is implemented.
-
-### Cleanup in progress
-
-- Deactivate unfinished command surfaces without removing them:
-  - `d2re doctor`
-  - `item_roller --brute`
-  - `item_roller --target`
-- Rewrite `docs/getting-started.md` as a short onboarding guide instead of a README duplicate.
-- Mark placeholder guides as drafts until their worked examples are implemented.
-- Add a phased cleanup checklist under `docs/maintenance/cleanup-checklist.md`.
-- Add smoke tests for temporarily disabled command surfaces.
 
 ### Planned next
 
-- Repair README project structure and example-path drift.
-- Add CI for smoke tests.
+- Add schema-aware result viewers that can render parser, TC, and drop JSON inside the GUI.
+- Add command history stored locally in the browser.
+- Add workflow presets for farming, save analysis, packet study, and data extraction.
 - Implement `d2re doctor` as an environment and repository self-check command.
-- Add result-viewer panels that can consume stable JSON outputs.
 - Implement bounded brute-force seed search for `item_roller --brute`.
 
 ---

@@ -34,22 +34,28 @@ Or explicitly:
 d2re gui
 ```
 
-Generate without opening a browser:
+Show CLI help without launching the GUI:
+
+```bash
+d2re --no-gui
+```
+
+Start the server without opening a browser:
 
 ```bash
 d2re gui --no-open --print-path
 ```
 
-Write to a chosen path:
+Generate static HTML instead of starting the interactive server:
 
 ```bash
 d2re gui --out ./d2re-command-center.html --no-open
 ```
 
-A dedicated console entry point is also available after package installation:
+Use the dedicated entry point:
 
 ```bash
-d2re-gui --no-open --print-path
+d2re-gui
 ```
 
 ## Integrated command builders
@@ -92,7 +98,7 @@ This GUI applies the uploaded UI/UX skill pack as a practical implementation che
 - Sequential headings.
 - Full keyboard focus visibility with a high-contrast focus ring.
 - Controls meet a 44px minimum interaction target.
-- Toast output uses `role="status"` and `aria-live="polite"`.
+- Output regions use polite live-region behavior.
 - Motion respects `prefers-reduced-motion`.
 - The GUI is useful without pointer-only interactions.
 
@@ -120,7 +126,7 @@ This GUI applies the uploaded UI/UX skill pack as a practical implementation che
 
 ## Implementation notes
 
-The workbench lives in `d2re/gui.py`.
+`d2re/gui.py` is a compatibility wrapper. The integrated implementation lives in `d2re/gui_integrated.py`.
 
 Main structures and functions:
 

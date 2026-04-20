@@ -94,6 +94,11 @@ def build_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument("--version", action="version", version=f"d2re {__version__}")
+    parser.add_argument(
+        "--no-gui",
+        action="store_true",
+        help="Do not auto-launch the GUI when no command is supplied.",
+    )
 
     subparsers = parser.add_subparsers(dest="command")
     _add_passthrough_parser(subparsers, "parse", "Run the .d2s save parser.")
