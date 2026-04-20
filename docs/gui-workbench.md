@@ -1,18 +1,34 @@
-# D2RE Visual Workbench
+# D2RE Command Center
 
 The D2RE Visual Workbench is the default front door for the toolkit. Running `d2re` with no subcommand opens a local browser UI automatically.
 
 The current shell is the **Runic Workbench**: a visual IDE-style cockpit with command builders, presets, favorites, local run history, output tools, theme controls, density controls, and guarded local execution through a loopback-only server.
 
-## Launch
+## Startup behavior
 
-Open the interactive workbench automatically:
+Running the package entry point with no subcommand now opens the GUI automatically:
 
 ```bash
 d2re
 ```
 
-Open it explicitly:
+Terminal workflows still work through explicit subcommands:
+
+```bash
+d2re parse MyChar.d2s --json
+d2re roll --seed 0xDEADBEEF --ilvl 85 --mf 300
+d2re tc --tc "Act 5 Super C" --resolve --top 25
+```
+
+## Launch commands
+
+Generate and open the command center:
+
+```bash
+d2re
+```
+
+Or explicitly:
 
 ```bash
 d2re gui
@@ -33,7 +49,7 @@ d2re gui --no-open --print-path
 Generate static HTML instead of starting the interactive server:
 
 ```bash
-d2re gui --static --out ./d2re-workbench.html --no-open
+d2re gui --out ./d2re-command-center.html --no-open
 ```
 
 Use the dedicated entry point:
@@ -81,39 +97,31 @@ Each module card has:
 - favorite toggle
 - status labels, tags, and usage guidance
 
-The browser never submits arbitrary shell text. It sends an action key and form values to the local D2RE server. Python maps that action key to predefined module metadata and runs only approved module entry points through `sys.executable -m ...`.
+| Builder | Purpose |
+|---|---|
+| Save Parser | Build `.d2s` parsing, item listing, checksum, and JSON commands. |
+| Item Roller | Build deterministic seed, Magic Find, Treasure Class, and affix commands. |
+| Data Extractor | Build MPQ/CASC extraction, table export, string extraction, and TC-tree commands. |
+| Packet Sniffer | Build demo, verbose, live capture, PCAP decode, filter, output, list, and struct-generation commands. |
+| Map Seed Tool | Build save-seed, explicit-seed, level, ASCII, rooms, BSP, and brute-force commands. |
+| Treasure Class Explorer | Build TC inspection, resolution, top-N, and JSON commands. |
+| Drop Calculator | Build Monte Carlo drop-estimation commands. |
+| GUI Launcher | Build command-center output/opening commands. |
+| Repository Doctor | Shows the planned diagnostic surface while `d2re doctor` remains disabled. |
 
-## Safety model
+The browser never executes these commands. It only previews and copies them so the user can run them deliberately in a terminal.
 
-The interactive server binds to `127.0.0.1` only and uses a per-session token for `/api/run` requests.
+## Extra functionality
 
-The GUI does not:
+The command center adds more than the original module cards:
 
-- accept free-form shell input
-- run arbitrary executables
-- mutate save files directly
-- start live packet capture by default
-- bundle game assets or game data
-
-The GUI can run supported D2RE commands, so users should still review generated commands before running them.
-
-## Static mode versus interactive mode
-
-| Mode | Command | Can run workflows? | Best for |
-|---|---|---:|---|
-| Interactive default | `d2re` | Yes | Normal use |
-| Explicit interactive | `d2re gui` | Yes | Normal use |
-| Server no-open | `d2re gui --no-open --print-path` | Yes, while the process is running | Remote/manual browser opening |
-| Static HTML | `d2re gui --static --out workbench.html` | No | Documentation, screenshots, read-only command building |
-| CLI help | `d2re --no-gui` | No | Terminal-only users |
-
-## Stopping the server
-
-The interactive server remains alive while the process runs. Stop it with:
-
-```text
-Ctrl+C
-```
+- command builders for all public commands
+- command preview that updates as form fields change
+- copy buttons for generated commands
+- workflow recipes with multi-command scripts
+- search and status filtering
+- module cards linked to their builders
+- startup guidance explaining that plain `d2re` opens the GUI
 
 ## UX and design decisions
 
@@ -146,9 +154,9 @@ This GUI applies the uploaded UI/UX skill pack as a practical implementation che
 
 `d2re/gui.py` is a compatibility wrapper. It preserves the core API from `d2re/gui_integrated.py` while routing the rendered UI and CLI entrypoint through `d2re/gui_beautified.py`.
 
-Main functions:
+Main structures and functions:
 
-| Function | Purpose |
+| Name | Purpose |
 |---|---|
 | `build_model()` | Builds the action/card data displayed by the workbench. |
 | `build_command()` | Converts trusted action metadata and form values into module argv. |
