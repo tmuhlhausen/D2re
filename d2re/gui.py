@@ -3,8 +3,8 @@
 
 from __future__ import annotations
 
-from .gui_beautified import *  # noqa: F401,F403
-from .gui_beautified import main
+from .gui_integrated import *  # noqa: F401,F403
+from .gui_beautified import build_parser, main, render_workbench, serve_workbench, write_workbench
 
 
 if __name__ == "__main__":
