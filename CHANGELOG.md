@@ -30,11 +30,44 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - Mark placeholder guides as drafts until their worked examples are implemented.
 - Add a phased cleanup checklist under `docs/maintenance/cleanup-checklist.md`.
 - Add smoke tests for temporarily disabled command surfaces.
+- Make the Visual Workbench the default `d2re` startup surface when no subcommand is supplied.
+- Add `--no-gui` to preserve terminal-first help behavior.
+- Add `d2re/gui_integrated.py` with a loopback-only interactive workbench server.
+- Add `d2re/gui_beautified.py` with the enhanced Runic Workbench shell.
+- Add integrated GUI command builders and guarded run actions for:
+  - save parsing
+  - item rolling
+  - treasure-class exploration
+  - drop simulation
+  - map seed analysis
+  - packet demo/list/filter workflows
+  - MPQ/CASC data extraction
+- Add per-session token validation for GUI `/api/run` requests.
+- Add static mode through `d2re gui --static` for read-only command building and documentation use.
+- Add Runic Workbench UI enhancements:
+  - Blood, Ember, and Spectral themes
+  - comfortable and compact density modes
+  - favorites and favorites filtering
+  - `Ctrl+K` / `Cmd+K` command palette
+  - preset workflows for packet demo, TC scanning, drop simulation, map seed checks, and table extraction
+  - browser-local run history
+  - output copy, clear, and Pretty JSON controls
+  - rune-style module markers and animated ambient background treatment
+- Expand GUI smoke tests for default launch, command building, guarded subprocess execution, token rejection, and beautified UI markers.
+
+### Changed
+
+- `d2re gui` now starts the interactive local workbench server by default instead of only writing static HTML.
+- `d2re/gui.py` now preserves the core GUI API while routing the rendered UI and CLI entrypoint through the beautified shell.
+- Update `docs/gui-workbench.md` to describe default startup, interactive mode, static mode, safety boundaries, Runic Workbench enhancements, and implementation details.
+- Keep `d2re doctor` disabled until diagnostic checks are implemented.
+- Keep `item_roller --brute` and `--target` registered but disabled until bounded brute-force search is implemented.
 
 ### Planned next
 
-- Repair README project structure and example-path drift.
-- Add CI for smoke tests.
+- Add schema-aware result viewers that can render parser, TC, and drop JSON inside the GUI.
+- Add workflow-specific result cards such as drop-rate confidence intervals and TC recursion maps.
+- Add more workflow presets for farming, save analysis, packet study, and data extraction.
 - Implement `d2re doctor` as an environment and repository self-check command.
 - Add result-viewer panels that can consume stable JSON outputs.
 - Implement bounded brute-force seed search for `item_roller --brute`.
