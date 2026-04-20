@@ -83,6 +83,7 @@ def build_parser() -> argparse.ArgumentParser:
         epilog=(
             "Examples:\n"
             "  d2re                         # open the GUI workbench\n"
+            "  d2re --no-gui                # show CLI help without opening the GUI\n"
             "  d2re gui --no-open --print-path\n"
             "  d2re parse MyChar.d2s --json\n"
             "  d2re roll --seed 0xDEADBEEF --ilvl 85 --mf 300\n"
@@ -127,6 +128,9 @@ def main(argv: Iterable[str] | None = None) -> int:
     ns = parser.parse_args(args)
 
     if not ns.command:
+        if ns.no_gui:
+            parser.print_help()
+            return 0
         return _dispatch("d2re.gui", [], "d2re-gui")
 
     if ns.command in DISABLED_COMMANDS:
