@@ -38,6 +38,18 @@ class GuiWorkbenchTests(unittest.TestCase):
             {"parse", "roll", "extract", "sniff", "map", "tc", "drops", "gui", "doctor"},
         )
 
+    def test_render_workbench_contains_beautified_ide_features(self) -> None:
+        html = gui.render_workbench(server_mode=True, csrf_token="test-token")
+
+        self.assertIn("Runic Workbench", html)
+        self.assertIn("Command palette", html)
+        self.assertIn("Run History", html)
+        self.assertIn("Favorites", html)
+        self.assertIn("Pretty JSON", html)
+        self.assertIn("d2re.favorites", html)
+        self.assertIn("data-theme=", html)
+        self.assertIn("packet-demo", html)
+
     def test_write_workbench_creates_html_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "workbench.html"
@@ -45,7 +57,7 @@ class GuiWorkbenchTests(unittest.TestCase):
 
             self.assertEqual(written, output.resolve())
             self.assertTrue(written.exists())
-            self.assertIn("Command Center", written.read_text(encoding="utf-8"))
+            self.assertIn("Runic Workbench", written.read_text(encoding="utf-8"))
 
     def test_gui_main_writes_static_file_without_opening_browser(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
