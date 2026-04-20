@@ -10,6 +10,26 @@ Versions follow [Semantic Versioning](https://semver.org/).
 
 ### Added
 
+- Add the first local Visual Workbench GUI through `d2re gui` and `d2re-gui`.
+- Add `d2re/gui.py` with standalone HTML generation for a read-only browser workbench.
+- Add `docs/gui-workbench.md` describing launch commands, design decisions, accessibility, safety, and next steps.
+- Add GUI smoke tests in `tests/test_gui_workbench.py`.
+
+### Changed
+
+- Activate `d2re gui` while keeping `d2re doctor` disabled.
+- Keep `item_roller --brute` and `--target` registered but disabled until bounded brute-force search is implemented.
+
+### Cleanup in progress
+
+- Deactivate unfinished command surfaces without removing them:
+  - `d2re doctor`
+  - `item_roller --brute`
+  - `item_roller --target`
+- Rewrite `docs/getting-started.md` as a short onboarding guide instead of a README duplicate.
+- Mark placeholder guides as drafts until their worked examples are implemented.
+- Add a phased cleanup checklist under `docs/maintenance/cleanup-checklist.md`.
+- Add smoke tests for temporarily disabled command surfaces.
 - Make the Visual Workbench the default `d2re` startup surface when no subcommand is supplied.
 - Add `--no-gui` to preserve terminal-first help behavior.
 - Add `d2re/gui_integrated.py` with a loopback-only interactive workbench server.
@@ -49,6 +69,7 @@ Versions follow [Semantic Versioning](https://semver.org/).
 - Add workflow-specific result cards such as drop-rate confidence intervals and TC recursion maps.
 - Add more workflow presets for farming, save analysis, packet study, and data extraction.
 - Implement `d2re doctor` as an environment and repository self-check command.
+- Add result-viewer panels that can consume stable JSON outputs.
 - Implement bounded brute-force seed search for `item_roller --brute`.
 
 ---
