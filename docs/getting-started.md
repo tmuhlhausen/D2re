@@ -41,16 +41,28 @@ python scripts/item_roller.py --help
 The fastest way to see the toolkit map is the local browser GUI:
 
 ```bash
+d2re
+```
+
+You can also open it explicitly:
+
+```bash
 d2re gui
 ```
 
-Generate it without opening a browser:
+Generate static HTML without opening a browser:
 
 ```bash
-d2re gui --no-open --print-path
+d2re gui --static --out ./d2re-workbench.html --no-open
 ```
 
-The workbench is read-only. It shows the major modules, explains when to use them, and gives copyable commands for save parsing, item rolling, Treasure Class exploration, drop simulation, map research, packet decoding, and table extraction.
+Show CLI help without opening the GUI:
+
+```bash
+d2re --no-gui
+```
+
+The Runic Workbench includes searchable modules, command builders, presets, favorites, browser-local run history, theme/density controls, output helpers, and guarded local execution for save parsing, item rolling, Treasure Class exploration, drop simulation, map research, packet decoding, and table extraction.
 
 ## First smoke test: no game files required
 
@@ -141,7 +153,7 @@ d2re parse MyChar.d2s --json
 d2re roll --seed 0xDEADBEEF --ilvl 85 --mf 300
 d2re tc --tc "Act 5 Super C" --resolve --top 25
 d2re drops --tc "Mephisto (N)" --item weap87 --runs 250000
-d2re gui --no-open --print-path
+d2re gui --static --out ./d2re-workbench.html --no-open
 ```
 
 Current limitation: `d2re doctor` is intentionally visible but disabled. It is reserved for the upcoming self-check work.
