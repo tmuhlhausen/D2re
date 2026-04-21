@@ -1,4 +1,4 @@
-<img width="784" height="1168" alt="download" src="https://github.com/user-attachments/assets/14013051-5e3b-4cc4-bdc8-94944b7a93a8" />
+<img width="360" height="575" alt="download" src="https://github.com/user-attachments/assets/14013051-5e3b-4cc4-bdc8-94944b7a93a8" />
 # D2RE — Diablo II Reverse Engineering Toolkit
 
 D2RE is a Python toolkit for researching, documenting, and experimenting with Diablo II internals. It focuses on save parsing, packet decoding, MPQ/CASC data extraction, item generation simulation, map seed analysis, and reference documentation for reverse engineering work.
