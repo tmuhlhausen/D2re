@@ -13,11 +13,16 @@ python -m pip install -r requirements.txt
 python -m pip install -e .
 ```
 
-Check the installed CLI:
+Open the visual workbench:
 
 ```bash
-d2re --version
-d2re --help
+d2re
+```
+
+Show CLI help without launching the GUI:
+
+```bash
+d2re --no-gui
 ```
 
 Run a no-game-files smoke test:
@@ -32,6 +37,7 @@ For a fuller first-run walkthrough, see [`docs/getting-started.md`](docs/getting
 
 | Area | What it does |
 |---|---|
+| Visual workbench | Opens a local Runic Workbench GUI with command builders, presets, favorites, run history, guarded execution, and dark gothic panels. |
 | Save parsing | Reads `.d2s` character files, including headers, stats, skills, items, quests, waypoints, and checksum state. |
 | Packet decoding | Captures or decodes Diablo II protocol packets and annotates known command bytes. |
 | Archive extraction | Extracts Classic D2 MPQ data tables and D2R CASC data when optional dependencies are available. |
@@ -43,8 +49,11 @@ For a fuller first-run walkthrough, see [`docs/getting-started.md`](docs/getting
 
 ```text
 D2re/
-├── d2re/                       # Installable package and unified CLI
-│   └── cli.py
+├── d2re/                       # Installable package, CLI, and GUI workbench
+│   ├── cli.py
+│   ├── gui.py
+│   ├── gui_integrated.py
+│   └── gui_beautified.py
 ├── scripts/                    # User-facing script entry points
 │   ├── d2s_parser.py
 │   ├── drop_calculator.py
@@ -59,6 +68,7 @@ D2re/
 │   ├── architecture/
 │   ├── maintenance/
 │   ├── getting-started.md
+│   ├── gui-workbench.md
 │   ├── hooking-guide.md
 │   └── emulator-server-guide.md
 ├── examples/                   # Small example workflows when present
@@ -71,6 +81,18 @@ D2re/
 ```
 
 ## Common commands
+
+Open the Runic Workbench:
+
+```bash
+d2re
+```
+
+Generate static workbench HTML:
+
+```bash
+d2re gui --static --out ./d2re-workbench.html --no-open
+```
 
 Parse a save file:
 
@@ -117,6 +139,9 @@ Some command surfaces are intentionally visible but disabled while they are impl
 
 | Command or flag | Current status |
 |---|---|
+| `d2re` | Active; opens the Runic Workbench by default |
+| `d2re --no-gui` | Active; prints CLI help without opening the GUI |
+| `d2re gui` | Active |
 | `d2re parse` | Active |
 | `d2re roll` | Active |
 | `d2re extract` | Active |
@@ -125,7 +150,6 @@ Some command surfaces are intentionally visible but disabled while they are impl
 | `d2re tc` | Active |
 | `d2re drops` | Active |
 | `d2re doctor` | Registered but temporarily disabled |
-| `d2re gui` | Registered but temporarily disabled |
 | `item_roller --brute` | Registered but temporarily disabled |
 | `item_roller --target` | Registered but temporarily disabled |
 
@@ -136,6 +160,7 @@ The disabled surfaces are tracked in [`docs/maintenance/cleanup-checklist.md`](d
 | Document | Use it for |
 |---|---|
 | [`docs/getting-started.md`](docs/getting-started.md) | First-run onboarding and common workflows. |
+| [`docs/gui-workbench.md`](docs/gui-workbench.md) | Runic Workbench usage, safety model, and UI behavior. |
 | [`ROADMAP.md`](ROADMAP.md) | Planned expansion, QoL goals, and long-term direction. |
 | [`docs/architecture/testing-strategy.md`](docs/architecture/testing-strategy.md) | Testing philosophy and fixture strategy. |
 | [`docs/maintenance/cleanup-checklist.md`](docs/maintenance/cleanup-checklist.md) | Current cleanup status and staged implementation plan. |
@@ -168,7 +193,7 @@ Run the current smoke tests with the standard library:
 python -m unittest discover tests
 ```
 
-The first cleanup tests protect disabled command behavior so planned features fail clearly instead of crashing or pretending to work.
+The current tests protect disabled command behavior, default GUI startup, guarded GUI execution, token rejection, static HTML output, and Runic Workbench UI markers.
 
 ## Legal notice
 
