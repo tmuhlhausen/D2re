@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+"""Wrapper for the packet sniffer implementation.
+Adds a compatibility shim for PacketDef.notes so demo mode works.
 """
 packet_sniffer.py — Diablo II network packet capture, decoder, and annotator.
 
@@ -1266,6 +1268,8 @@ def main():
 
     ap.print_help()
 
+if not hasattr(PacketDef, "notes"):
+    PacketDef.notes = ""
 
 if __name__ == "__main__":
     main()
